@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* MealCraft: Warm Peach to Sage - Cozy Glassmorphism Theme */
+  --background: oklch(0.96 0.02 70); /* Warm cream */
+  --foreground: oklch(0.25 0.02 50); /* Dark warm brown */
+  --card: oklch(0.98 0.015 70 / 0.7); /* Frosted glass peach */
+  --card-foreground: oklch(0.25 0.02 50);
+  --popover: oklch(0.98 0.015 70 / 0.9);
+  --popover-foreground: oklch(0.25 0.02 50);
+  --primary: oklch(0.55 0.12 145); /* Sage green */
+  --primary-foreground: oklch(0.98 0.01 145);
+  --secondary: oklch(0.85 0.06 55); /* Soft peach */
+  --secondary-foreground: oklch(0.3 0.03 50);
+  --muted: oklch(0.92 0.02 70);
+  --muted-foreground: oklch(0.45 0.02 50);
+  --accent: oklch(0.75 0.10 50); /* Warm coral accent */
+  --accent-foreground: oklch(0.2 0.02 50);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 25);
+  --border: oklch(0.88 0.03 70 / 0.5);
+  --input: oklch(0.95 0.015 70 / 0.8);
+  --ring: oklch(0.55 0.12 145);
+  --chart-1: oklch(0.55 0.12 145); /* Sage */
+  --chart-2: oklch(0.75 0.10 50); /* Coral */
+  --chart-3: oklch(0.85 0.06 55); /* Peach */
+  --chart-4: oklch(0.65 0.08 145); /* Muted sage */
+  --chart-5: oklch(0.80 0.08 70); /* Light warm */
+  --radius: 2rem; /* 32px squishy corners */
+  --sidebar: oklch(0.97 0.02 70 / 0.8);
+  --sidebar-foreground: oklch(0.25 0.02 50);
+  --sidebar-primary: oklch(0.55 0.12 145);
+  --sidebar-primary-foreground: oklch(0.98 0.01 145);
+  --sidebar-accent: oklch(0.85 0.06 55);
+  --sidebar-accent-foreground: oklch(0.3 0.03 50);
+  --sidebar-border: oklch(0.88 0.03 70 / 0.3);
+  --sidebar-ring: oklch(0.55 0.12 145);
+}
+
+.dark {
+  /* Dark mode with warm undertones */
+  --background: oklch(0.18 0.02 50);
+  --foreground: oklch(0.95 0.01 70);
+  --card: oklch(0.22 0.02 50 / 0.7);
+  --card-foreground: oklch(0.95 0.01 70);
+  --popover: oklch(0.22 0.02 50 / 0.9);
+  --popover-foreground: oklch(0.95 0.01 70);
+  --primary: oklch(0.65 0.12 145);
+  --primary-foreground: oklch(0.15 0.02 145);
+  --secondary: oklch(0.35 0.04 55);
+  --secondary-foreground: oklch(0.92 0.02 55);
+  --muted: oklch(0.28 0.02 50);
+  --muted-foreground: oklch(0.65 0.02 70);
+  --accent: oklch(0.65 0.10 50);
+  --accent-foreground: oklch(0.95 0.01 50);
+  --destructive: oklch(0.5 0.18 25);
+  --destructive-foreground: oklch(0.95 0.01 25);
+  --border: oklch(0.32 0.02 50 / 0.5);
+  --input: oklch(0.25 0.02 50 / 0.8);
+  --ring: oklch(0.65 0.12 145);
+  --chart-1: oklch(0.65 0.12 145);
+  --chart-2: oklch(0.65 0.10 50);
+  --chart-3: oklch(0.55 0.06 55);
+  --chart-4: oklch(0.55 0.08 145);
+  --chart-5: oklch(0.50 0.08 70);
+  --sidebar: oklch(0.20 0.02 50 / 0.8);
+  --sidebar-foreground: oklch(0.95 0.01 70);
+  --sidebar-primary: oklch(0.65 0.12 145);
+  --sidebar-primary-foreground: oklch(0.15 0.02 145);
+  --sidebar-accent: oklch(0.35 0.04 55);
+  --sidebar-accent-foreground: oklch(0.92 0.02 55);
+  --sidebar-border: oklch(0.32 0.02 50 / 0.3);
+  --sidebar-ring: oklch(0.65 0.12 145);
+}
+
+@theme inline {
+  --font-sans: 'Nunito', system-ui, sans-serif;
+  --font-fredoka: 'Fredoka', cursive;
+  --font-mono: 'Courier New', monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for cozy feel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.05 145 / 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.08 145 / 0.5);
+}
+
+/* Font utility class for Fredoka headings */
+.font-fredoka {
+  font-family: 'Fredoka', cursive;
+}
