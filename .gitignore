@@ -1,75 +1,87 @@
-# ===========================
-# v0 / Sandbox internals
-# ===========================
-__v0_runtime_loader.js
-__v0_devtools.tsx
-__v0_jsx-dev-runtime.ts
-.snowflake/
-.v0-trash/
+# ==========================================
+# MealCraft Root .gitignore
+# ==========================================
 
-# ===========================
-# Next.js
-# ===========================
-.next/
-out/
-next-env.d.ts
-*.tsbuildinfo
-
-# ===========================
-# Build outputs
-# ===========================
-build/
-dist/
-vite.config.ts.timestamp-*
-
-# ===========================
-# Dependencies
-# ===========================
-node_modules/
+# --- Dependencies ---
+**/node_modules/
+**/jspm_packages/
 .pnp
 .pnp.js
 
-# ===========================
-# Environment variables
-# ===========================
+# --- Build Outputs ---
+**/dist/
+**/build/
+**/target/
+**/out/
+**/bin/
+*.tsbuildinfo
+vite.config.ts.timestamp-*
+
+# --- Java / Maven ---
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# --- Environment Variables & Secrets ---
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.env.sample
+**/config/application-*.properties
+!**/config/application-sample.properties
 
-# ===========================
-# Debug logs
-# ===========================
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.iml
+*.iws
+*.ipr
+.project
+.settings/
+.classpath
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+# --- Logs & Debugging ---
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .pnpm-debug.log*
+**/logs/
+*.log
 
-# ===========================
-# Testing
-# ===========================
-/coverage
-
-# ===========================
-# Vercel
-# ===========================
-.vercel
-
-# ===========================
-# Editor / IDE
-# ===========================
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# ===========================
-# OS files
-# ===========================
+# --- OS Files ---
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Database ---
+*.db
+*.sqlite
+# Keep .sql files as they are usually schema exports
+#!*.sql
+
+# --- Misc ---
+.snowflake/
+.v0-trash/
+.vercel
+/coverage

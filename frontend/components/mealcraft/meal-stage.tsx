@@ -51,7 +51,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories }: MealS
                   key="loading"
                   initial={{ opacity: 0, rotate: 0 }}
                   animate={{ opacity: 1, rotate: 360 }}
-                  exit={{ opacity: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="text-3xl"
                 >
@@ -98,7 +98,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories }: MealS
                   key="loading"
                   initial={{ opacity: 0, rotate: 0 }}
                   animate={{ opacity: 1, rotate: 360 }}
-                  exit={{ opacity: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="text-3xl"
                 >
@@ -145,7 +145,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories }: MealS
                   key="loading"
                   initial={{ opacity: 0, rotate: 0 }}
                   animate={{ opacity: 1, rotate: 360 }}
-                  exit={{ opacity: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.2 } }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   className="text-3xl"
                 >

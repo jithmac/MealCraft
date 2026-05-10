@@ -6,6 +6,7 @@ import { MealStage } from '@/components/mealcraft/meal-stage'
 import { MoodTracker } from '@/components/mealcraft/mood-tracker'
 import { QuickOrder } from '@/components/mealcraft/quick-order'
 import { StrongAvocado, BudgetCoin, ChefHat } from '@/components/mealcraft/food-characters'
+import { toast } from 'sonner'
 
 export interface UserPreferences {
   age: number
@@ -61,19 +62,42 @@ function calculateTDEE(prefs: UserPreferences): number {
 
 export default function App() {
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences)
-  const [mealPlan] = useState<MealPlan>(sampleMealPlan)
+  const [mealPlan, setMealPlan] = useState<MealPlan>(sampleMealPlan)
   const [isGenerating, setIsGenerating] = useState(false)
   const [healthScore, setHealthScore] = useState(78)
 
   const recommendedCalories = calculateTDEE(preferences)
   const isLowBudget = preferences.budget < 3000
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
-      setIsGenerating(false)
+    try {
+      const response = await fetch('http://localhost:8080/api/mealplan/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(preferences)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.message || 'Failed to generate meal plan')
+      }
+
+      // Artificial delay so the floating ChefHat animation has time to show
+      await new Promise(resolve => setTimeout(resolve, 1500))
+
+      const newPlan = await response.json()
+      setMealPlan(newPlan)
       setHealthScore(Math.min(100, healthScore + Math.floor(Math.random() * 10)))
-    }, 3000)
+      toast.success('Meal plan generated successfully!')
+    } catch (error) {
+      console.error(error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate meal plan. Try adjusting your preferences.')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
