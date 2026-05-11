@@ -1,6 +1,21 @@
 % ==========================================
 % MEALCRAFT AI ENGINE - CORE LOGIC
+% Updated Version: 50 Foods + Meal Type Classification
+% Platform: SWI-Prolog
 % ==========================================
+
+:- module(mealcraft, [
+    food/9,
+    meets_diet/2,
+    meets_meal_type/2,
+    meets_health/2,
+    build_meal/6,
+    generate_daily_plan/7,
+    food_details/9,
+    meal_nutrition/6
+]).
+
+:- use_module(library(lists)).
 
 % --- KNOWLEDGE BASE (FOOD FACTS) ---
 % Format: food(Name, Calories, Protein, Carbs, Fats, Cost_LKR, Category, [DietaryTags]).
