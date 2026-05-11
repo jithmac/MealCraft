@@ -75,7 +75,7 @@ export function QuickOrder({ mealPlan, budget }: QuickOrderProps) {
             >
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">${item.price.toFixed(2)}</p>
+                <p className="text-xs text-muted-foreground">Rs. {item.price.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-1">
                 <motion.button
@@ -120,7 +120,7 @@ export function QuickOrder({ mealPlan, budget }: QuickOrderProps) {
             animate={{ scale: 1 }}
             className={`text-xl font-bold font-fredoka ${isOverBudget ? 'text-destructive' : 'text-foreground'}`}
           >
-            ${total.toFixed(2)}
+            Rs. {total.toFixed(2)}
           </motion.span>
         </div>
         

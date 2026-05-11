@@ -30,6 +30,8 @@ interface ControlCenterProps {
   recommendedCalories: number
   onGenerate: () => void
   isGenerating: boolean
+  isShrunk?: boolean
+  onEdit?: () => void
 }
 
 const activityLevels = [
@@ -45,7 +47,9 @@ export function ControlCenter({
   onPreferencesChange, 
   recommendedCalories,
   onGenerate,
-  isGenerating
+  isGenerating,
+  isShrunk,
+  onEdit
 }: ControlCenterProps) {
   const updatePreferences = (updates: Partial<UserPreferences>) => {
     onPreferencesChange({ ...preferences, ...updates })
@@ -60,6 +64,34 @@ export function ControlCenter({
     }
   }
 
+  if (isShrunk) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="flex flex-col h-full items-center justify-center text-center p-4"
+      >
+        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+          <Calculator className="w-8 h-8 text-primary" />
+        </div>
+        <h3 className="font-fredoka text-xl font-semibold mb-2">Preferences Set</h3>
+        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+          Daily Goal: <span className="font-bold text-foreground">{recommendedCalories} kcal</span><br/>
+          Weekly Budget: <span className="font-bold text-foreground">Rs. {preferences.budget}</span>
+        </p>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={onEdit}
+          className="px-6 py-2 rounded-xl bg-secondary text-secondary-foreground font-semibold text-sm hover:bg-secondary/80 transition-colors shadow-sm"
+        >
+          Edit Preferences
+        </motion.button>
+      </motion.div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -68,8 +100,8 @@ export function ControlCenter({
           <Calculator className="w-5 h-5 text-primary" />
           Control Center
         </h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          Customize your meal plan
+        <p className="text-sm text-muted-foreground mt-1 font-medium">
+          Enter your details below to generate a personalized meal plan.
         </p>
       </div>
 
@@ -176,19 +208,19 @@ export function ControlCenter({
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-xs text-muted-foreground">Amount</span>
-              <span className="text-base font-bold text-foreground font-fredoka">${preferences.budget}</span>
+              <span className="text-base font-bold text-foreground font-fredoka">Rs. {preferences.budget}</span>
             </div>
             <Slider
               value={[preferences.budget]}
               onValueChange={([v]) => updatePreferences({ budget: v })}
-              min={20}
-              max={200}
-              step={5}
+              min={2000}
+              max={30000}
+              step={500}
               className="py-1"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>$20</span>
-              <span>$200</span>
+              <span>Rs. 2000</span>
+              <span>Rs. 30000</span>
             </div>
           </div>
         </div>
