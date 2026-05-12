@@ -5,7 +5,7 @@ import { ControlCenter } from '@/components/mealcraft/control-center'
 import { MealStage } from '@/components/mealcraft/meal-stage'
 import { MoodTracker } from '@/components/mealcraft/mood-tracker'
 import { QuickOrder } from '@/components/mealcraft/quick-order'
-import { StrongAvocado, BudgetCoin, ChefHat } from '@/components/mealcraft/food-characters'
+import { StrongAvocado, ChefHat } from '@/components/mealcraft/food-characters'
 
 export interface UserPreferences {
   age: number
@@ -18,9 +18,9 @@ export interface UserPreferences {
 }
 
 export interface MealPlan {
-  breakfast: { name: string; calories: number; cost: number }
-  lunch: { name: string; calories: number; cost: number }
-  dinner: { name: string; calories: number; cost: number }
+  breakfast: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
+  lunch: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
+  dinner: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
 }
 
 const defaultPreferences: UserPreferences = {
@@ -29,14 +29,14 @@ const defaultPreferences: UserPreferences = {
   height: 170,
   gender: 'male',
   activityLevel: 'moderate',
-  budget: 2500,
+  budget: 10000,
   dietaryRestrictions: [],
 }
 
 const sampleMealPlan: MealPlan = {
-  breakfast: { name: 'Avocado Toast with Eggs', calories: 450, cost: 800 },
-  lunch: { name: 'Mediterranean Quinoa Bowl', calories: 620, cost: 1200 },
-  dinner: { name: 'Grilled Salmon with Vegetables', calories: 580, cost: 1800 },
+  breakfast: { name: 'Avocado Toast with Eggs', calories: 450, cost: 1500, macros: { protein: 20, carbs: 45, fat: 22 } },
+  lunch: { name: 'Mediterranean Quinoa Bowl', calories: 620, cost: 2500, macros: { protein: 25, carbs: 70, fat: 28 } },
+  dinner: { name: 'Grilled Salmon with Vegetables', calories: 580, cost: 3500, macros: { protein: 42, carbs: 30, fat: 34 } },
 }
 
 function calculateBMR(prefs: UserPreferences): number {
@@ -61,23 +61,89 @@ function calculateTDEE(prefs: UserPreferences): number {
 
 export default function App() {
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences)
-  const [mealPlan] = useState<MealPlan>(sampleMealPlan)
+  const [mealPlan, setMealPlan] = useState<MealPlan>(sampleMealPlan)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [hasGenerated, setHasGenerated] = useState(false)
   const [healthScore, setHealthScore] = useState(78)
+  const [error, setError] = useState<string | null>(null)
 
   const recommendedCalories = calculateTDEE(preferences)
-  const isLowBudget = preferences.budget < 3000
+  const isLowBudget = preferences.budget < 5000
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     setIsGenerating(true)
-    setTimeout(() => {
-      setIsGenerating(false)
+    setError(null)
+
+    try {
+      const response = await fetch('http://localhost:8080/api/mealplan/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          age: preferences.age,
+          weight: preferences.weight,
+          height: preferences.height,
+          gender: preferences.gender,
+          activityLevel: preferences.activityLevel,
+          budget: preferences.budget,
+          dietaryRestrictions: preferences.dietaryRestrictions,
+        }),
+      })
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null)
+        throw new Error(errData?.message || `Server error: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      // Map the backend response to the frontend MealPlan shape
+      setMealPlan({
+        breakfast: {
+          name: data.breakfast?.name || 'No breakfast found',
+          calories: data.breakfast?.calories || 0,
+          cost: data.breakfast?.cost || 0,
+          macros: { protein: 20, carbs: 45, fat: 22 }, // Prolog doesn't return macros yet
+        },
+        lunch: {
+          name: data.lunch?.name || 'No lunch found',
+          calories: data.lunch?.calories || 0,
+          cost: data.lunch?.cost || 0,
+          macros: { protein: 25, carbs: 70, fat: 28 },
+        },
+        dinner: {
+          name: data.dinner?.name || 'No dinner found',
+          calories: data.dinner?.calories || 0,
+          cost: data.dinner?.cost || 0,
+          macros: { protein: 42, carbs: 30, fat: 34 },
+        },
+      })
+
+      setHasGenerated(true)
       setHealthScore(Math.min(100, healthScore + Math.floor(Math.random() * 10)))
-    }, 3000)
+    } catch (err: any) {
+      console.error('Meal plan generation failed:', err)
+      setError(err.message || 'Failed to generate meal plan. Is the backend running?')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   return (
     <div className="h-screen w-screen p-4 md:p-6">
+      {/* Error Banner */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-6 py-3 bg-destructive/90 text-destructive-foreground rounded-2xl shadow-lg backdrop-blur-sm max-w-lg text-sm font-medium"
+          >
+            {error}
+            <button onClick={() => setError(null)} className="ml-3 underline opacity-80 hover:opacity-100">Dismiss</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Floating Characters Layer */}
       <div className="fixed inset-0 pointer-events-none z-10">
         <AnimatePresence>
@@ -99,13 +165,14 @@ export default function App() {
       <div className="h-full grid grid-cols-1 lg:grid-cols-12 grid-rows-[auto_1fr_auto] lg:grid-rows-1 gap-4 md:gap-6 max-w-[1800px] mx-auto">
         {/* Left Column - Control Center */}
         <motion.div 
-          className="lg:col-span-3 lg:row-span-1"
+          layout
+          className={`${hasGenerated ? 'lg:col-span-3' : 'lg:col-span-5'} lg:row-span-1`}
           initial={{ x: -50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <div className="h-full bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="h-full flex flex-col bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden">
+            <div className="flex items-center gap-3 mb-6 shrink-0">
               <div className="w-10 h-10 rounded-2xl bg-primary/20 flex items-center justify-center">
                 <Utensils className="w-5 h-5 text-primary" />
               </div>
@@ -115,27 +182,27 @@ export default function App() {
               </div>
             </div>
             
-            <ControlCenter 
-              preferences={preferences}
-              onPreferencesChange={setPreferences}
-              recommendedCalories={recommendedCalories}
-              onGenerate={handleGenerate}
-              isGenerating={isGenerating}
-            />
-
-            {/* Reactive Avocado */}
-            <div className="mt-6 flex justify-center">
-              <StrongAvocado calorieGoal={recommendedCalories} />
+            <div className="flex-1 min-h-0">
+              <ControlCenter 
+                preferences={preferences}
+                onPreferencesChange={setPreferences}
+                recommendedCalories={recommendedCalories}
+                onGenerate={handleGenerate}
+                isGenerating={isGenerating}
+                isShrunk={hasGenerated}
+                onEdit={() => setHasGenerated(false)}
+              />
             </div>
           </div>
         </motion.div>
 
         {/* Center Column - Meal Stage */}
         <motion.div 
-          className="lg:col-span-6 lg:row-span-1"
+          layout
+          className={`${hasGenerated ? 'lg:col-span-6' : 'lg:col-span-4'} lg:row-span-1`}
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <div className="h-full bg-card/60 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 relative overflow-hidden">
             {/* Decorative gradient */}
@@ -147,22 +214,13 @@ export default function App() {
                   <h2 className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</h2>
                   <p className="text-sm text-muted-foreground">Personalized for your goals</p>
                 </div>
-                <motion.button
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-2xl font-medium text-sm shadow-lg disabled:opacity-50"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Sparkles className="w-4 h-4" />
-                  {isGenerating ? 'Crafting...' : 'Generate'}
-                </motion.button>
               </div>
 
               <MealStage 
                 mealPlan={mealPlan}
                 isGenerating={isGenerating}
                 recommendedCalories={recommendedCalories}
+                isShrunk={!hasGenerated}
               />
             </div>
           </div>
@@ -170,10 +228,11 @@ export default function App() {
 
         {/* Right Column - Mood + Quick Order */}
         <motion.div 
+          layout
           className="lg:col-span-3 lg:row-span-1 flex flex-col gap-4 md:gap-6"
           initial={{ x: 50, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           {/* Mood Tracker */}
           <div className="flex-1 bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden">
@@ -183,20 +242,6 @@ export default function App() {
           {/* Quick Order */}
           <div className="flex-1 bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden relative">
             <QuickOrder mealPlan={mealPlan} budget={preferences.budget} />
-            
-            {/* Budget Characters */}
-            <AnimatePresence>
-              {isLowBudget && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0, opacity: 0 }}
-                  className="absolute bottom-4 right-4"
-                >
-                  <BudgetCoin isLowBudget />
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </motion.div>
       </div>

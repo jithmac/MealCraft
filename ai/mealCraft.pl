@@ -1,6 +1,21 @@
 % ==========================================
 % MEALCRAFT AI ENGINE - CORE LOGIC
+% Updated Version: 50 Foods + Meal Type Classification
+% Platform: SWI-Prolog
 % ==========================================
+
+:- module(mealcraft, [
+    food/9,
+    meets_diet/2,
+    meets_meal_type/2,
+    meets_health/2,
+    build_meal/6,
+    generate_daily_plan/7,
+    food_details/9,
+    meal_nutrition/6
+]).
+
+:- use_module(library(lists)).
 
 % --- KNOWLEDGE BASE (FOOD FACTS) ---
 % Format: food(Name, Calories, Protein, Carbs, Fats, Cost_LKR, Category, [DietaryTags]).
@@ -95,3 +110,14 @@ generate_daily_plan(TargetCals, MaxBudget, Diet, Health, Plan, DayCals, DayCost)
 
     % Construct Final Plan
     Plan = [breakfast(Breakfast), lunch(Lunch), dinner(Dinner)].
+
+% --- NUTRITION CALCULATOR ---
+meal_nutrition([Base, Protein, Veg], TotalCals, TotalProt, TotalCarbs, TotalFats, TotalCost) :-
+    food(Base, C1, P1, Cb1, F1, Cost1, _, _),
+    food(Protein, C2, P2, Cb2, F2, Cost2, _, _),
+    food(Veg, C3, P3, Cb3, F3, Cost3, _, _),
+    TotalCals is C1 + C2 + C3,
+    TotalProt is P1 + P2 + P3,
+    TotalCarbs is Cb1 + Cb2 + Cb3,
+    TotalFats is F1 + F2 + F3,
+    TotalCost is Cost1 + Cost2 + Cost3.

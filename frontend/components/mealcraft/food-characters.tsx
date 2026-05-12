@@ -105,7 +105,7 @@ export function BudgetCoin({ isLowBudget, className = "" }: { isLowBudget: boole
         <circle cx="40" cy="40" r="32" fill="#ffec8b" stroke="#daa520" strokeWidth="2" />
         
         {/* Dollar sign */}
-        <text x="40" y="35" textAnchor="middle" fontSize="16" fontWeight="bold" fill="#b8860b">Rs</text>
+        <text x="40" y="35" textAnchor="middle" fontSize="20" fontWeight="bold" fill="#b8860b">$</text>
         
         {/* Face */}
         <circle cx="30" cy="38" r="3" fill="#2d2d2d" />
