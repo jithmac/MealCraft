@@ -13,14 +13,34 @@ export interface UserPreferences {
   height: number
   gender: 'male' | 'female'
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active'
-  budget: number
-  dietaryRestrictions: string[]
+  diet: string
+  healthConditions: string[]
+}
+
+export interface FoodItem {
+  name: string
+  quantity: number
+  amount: number
+  calories: number
+}
+
+export interface Meal {
+  name: string
+  calories: number
+  carbs: number
+  protein: number
+  fat: number
+  items: FoodItem[]
 }
 
 export interface MealPlan {
-  breakfast: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
-  lunch: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
-  dinner: { name: string; calories: number; cost: number; macros: { protein: number; carbs: number; fat: number } }
+  breakfast: Meal
+  lunch: Meal
+  dinner: Meal
+  totalCals: number
+  totalCarbs: number
+  totalProtein: number
+  totalFat: number
 }
 
 const defaultPreferences: UserPreferences = {
@@ -29,14 +49,18 @@ const defaultPreferences: UserPreferences = {
   height: 170,
   gender: 'male',
   activityLevel: 'moderate',
-  budget: 10000,
-  dietaryRestrictions: [],
+  diet: 'omnivore',
+  healthConditions: [],
 }
 
 const sampleMealPlan: MealPlan = {
-  breakfast: { name: 'Avocado Toast with Eggs', calories: 450, cost: 1500, macros: { protein: 20, carbs: 45, fat: 22 } },
-  lunch: { name: 'Mediterranean Quinoa Bowl', calories: 620, cost: 2500, macros: { protein: 25, carbs: 70, fat: 28 } },
-  dinner: { name: 'Grilled Salmon with Vegetables', calories: 580, cost: 3500, macros: { protein: 42, carbs: 30, fat: 34 } },
+  breakfast: { name: 'Breakfast', calories: 450, carbs: 45, protein: 20, fat: 22, items: [] },
+  lunch: { name: 'Lunch', calories: 620, carbs: 70, protein: 25, fat: 28, items: [] },
+  dinner: { name: 'Dinner', calories: 580, carbs: 30, protein: 42, fat: 34, items: [] },
+  totalCals: 1650,
+  totalCarbs: 145,
+  totalProtein: 87,
+  totalFat: 84
 }
 
 function calculateBMR(prefs: UserPreferences): number {
@@ -68,7 +92,6 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
 
   const recommendedCalories = calculateTDEE(preferences)
-  const isLowBudget = preferences.budget < 5000
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -84,8 +107,9 @@ export default function App() {
           height: preferences.height,
           gender: preferences.gender,
           activityLevel: preferences.activityLevel,
-          budget: preferences.budget,
-          dietaryRestrictions: preferences.dietaryRestrictions,
+          budget: 0, // Ignored by backend
+          diet: preferences.diet,
+          healthConditions: preferences.healthConditions,
         }),
       })
 
@@ -98,24 +122,13 @@ export default function App() {
 
       // Map the backend response to the frontend MealPlan shape
       setMealPlan({
-        breakfast: {
-          name: data.breakfast?.name || 'No breakfast found',
-          calories: data.breakfast?.calories || 0,
-          cost: data.breakfast?.cost || 0,
-          macros: { protein: 20, carbs: 45, fat: 22 }, // Prolog doesn't return macros yet
-        },
-        lunch: {
-          name: data.lunch?.name || 'No lunch found',
-          calories: data.lunch?.calories || 0,
-          cost: data.lunch?.cost || 0,
-          macros: { protein: 25, carbs: 70, fat: 28 },
-        },
-        dinner: {
-          name: data.dinner?.name || 'No dinner found',
-          calories: data.dinner?.calories || 0,
-          cost: data.dinner?.cost || 0,
-          macros: { protein: 42, carbs: 30, fat: 34 },
-        },
+        breakfast: data.breakfast || { name: 'No breakfast', calories: 0, carbs: 0, protein: 0, fat: 0, items: [] },
+        lunch: data.lunch || { name: 'No lunch', calories: 0, carbs: 0, protein: 0, fat: 0, items: [] },
+        dinner: data.dinner || { name: 'No dinner', calories: 0, carbs: 0, protein: 0, fat: 0, items: [] },
+        totalCals: data.totalCals || 0,
+        totalCarbs: data.totalCarbs || 0,
+        totalProtein: data.totalProtein || 0,
+        totalFat: data.totalFat || 0,
       })
 
       setHasGenerated(true)
@@ -241,7 +254,7 @@ export default function App() {
 
           {/* Quick Order */}
           <div className="flex-1 bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden relative">
-            <QuickOrder mealPlan={mealPlan} budget={preferences.budget} />
+            <QuickOrder mealPlan={mealPlan} budget={20000} />
           </div>
         </motion.div>
       </div>

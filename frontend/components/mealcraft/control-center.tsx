@@ -20,8 +20,8 @@ interface UserPreferences {
   height: number
   gender: 'male' | 'female'
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active'
-  budget: number
-  dietaryRestrictions: string[]
+  diet: string
+  healthConditions: string[]
 }
 
 interface ControlCenterProps {
@@ -55,12 +55,12 @@ export function ControlCenter({
     onPreferencesChange({ ...preferences, ...updates })
   }
 
-  const toggleDietaryRestriction = (restriction: string) => {
-    const current = preferences.dietaryRestrictions
-    if (current.includes(restriction)) {
-      updatePreferences({ dietaryRestrictions: current.filter(r => r !== restriction) })
+  const toggleHealthCondition = (condition: string) => {
+    const current = preferences.healthConditions || []
+    if (current.includes(condition)) {
+      updatePreferences({ healthConditions: current.filter(c => c !== condition) })
     } else {
-      updatePreferences({ dietaryRestrictions: [...current, restriction] })
+      updatePreferences({ healthConditions: [...current, condition] })
     }
   }
 
@@ -78,7 +78,7 @@ export function ControlCenter({
         <h3 className="font-fredoka text-xl font-semibold mb-2">Preferences Set</h3>
         <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
           Daily Goal: <span className="font-bold text-foreground">{recommendedCalories} kcal</span><br/>
-          Weekly Budget: <span className="font-bold text-foreground">Rs. {preferences.budget}</span>
+          Diet: <span className="font-bold text-foreground">{preferences.diet.replace('_', ' ')}</span>
         </p>
         <motion.button
           whileHover={{ scale: 1.05 }}
@@ -199,53 +199,64 @@ export function ControlCenter({
           </motion.div>
         </div>
 
-        {/* Budget */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <DollarSign className="w-3 h-3 text-chart-2" />
-            Weekly Budget
-          </h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-muted-foreground">Amount</span>
-              <span className="text-base font-bold text-foreground font-fredoka">Rs. {preferences.budget}</span>
-            </div>
-            <Slider
-              value={[preferences.budget]}
-              onValueChange={([v]) => updatePreferences({ budget: v })}
-              min={2000}
-              max={30000}
-              step={500}
-              className="py-1"
-            />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Rs. 2000</span>
-              <span>Rs. 30000</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Dietary Preferences */}
+        {/* Diet */}
         <div className="space-y-2">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Leaf className="w-3 h-3 text-primary" />
-            Dietary Preferences
+            Diet Type
+          </h3>
+          <Select 
+            value={preferences.diet} 
+            onValueChange={(v) => updatePreferences({ diet: v })}
+          >
+            <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[
+                { value: "omnivore", label: "Omnivore (Any)" },
+                { value: "vegetarian", label: "Vegetarian" },
+                { value: "vegan", label: "Vegan" },
+                { value: "pescatarian", label: "Pescatarian" },
+                { value: "halal", label: "Halal" },
+                { value: "gluten_free", label: "Gluten-Free" },
+                { value: "low_carb", label: "Low Carb" },
+                { value: "diabetic_friendly", label: "Diabetic Friendly" },
+                { value: "high_protein", label: "High Protein" },
+              ].map((d) => (
+                <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Health Conditions */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Activity className="w-3 h-3 text-destructive" />
+            Health Conditions
           </h3>
           <div className="space-y-2">
             {[
-              { key: "vegetarian", label: "Vegetarian" },
-              { key: "vegan", label: "Vegan" },
-              { key: "gluten-free", label: "Gluten-Free" },
-              { key: "dairy-free", label: "Dairy-Free" },
-            ].map((pref) => (
-              <div key={pref.key} className="flex items-center justify-between p-2 rounded-xl bg-card/30 hover:bg-card/50 transition-colors">
-                <Label htmlFor={pref.key} className="text-xs cursor-pointer">
-                  {pref.label}
+              { key: "overweight", label: "Overweight / Obesity" },
+              { key: "diabetes", label: "Diabetes" },
+              { key: "hypertension", label: "Hypertension" },
+              { key: "heart_disease", label: "Heart Disease" },
+              { key: "kidney_disease", label: "Kidney Disease" },
+              { key: "gout", label: "Gout" },
+              { key: "celiac", label: "Celiac Disease" },
+              { key: "lactose_intolerance", label: "Lactose Intolerance" },
+              { key: "ibs", label: "IBS" },
+              { key: "pregnancy", label: "Pregnancy" }
+            ].map((cond) => (
+              <div key={cond.key} className="flex items-center justify-between p-2 rounded-xl bg-card/30 hover:bg-card/50 transition-colors">
+                <Label htmlFor={cond.key} className="text-xs cursor-pointer">
+                  {cond.label}
                 </Label>
                 <Switch
-                  id={pref.key}
-                  checked={preferences.dietaryRestrictions.includes(pref.key)}
-                  onCheckedChange={() => toggleDietaryRestriction(pref.key)}
+                  id={cond.key}
+                  checked={(preferences.healthConditions || []).includes(cond.key)}
+                  onCheckedChange={() => toggleHealthCondition(cond.key)}
                 />
               </div>
             ))}
