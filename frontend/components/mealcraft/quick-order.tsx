@@ -3,11 +3,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ShoppingCart, Plus, Minus, CreditCard, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-interface MealPlan {
-  breakfast: { name: string; calories: number; cost: number }
-  lunch: { name: string; calories: number; cost: number }
-  dinner: { name: string; calories: number; cost: number }
-}
+import { MealPlan } from "../../src/App"
 
 interface QuickOrderProps {
   mealPlan: MealPlan
@@ -23,9 +19,9 @@ interface CartItem {
 
 export function QuickOrder({ mealPlan, budget }: QuickOrderProps) {
   const [cart, setCart] = useState<CartItem[]>([
-    { id: "1", name: mealPlan.breakfast.name, price: mealPlan.breakfast.cost, quantity: 1 },
-    { id: "2", name: mealPlan.lunch.name, price: mealPlan.lunch.cost, quantity: 1 },
-    { id: "3", name: mealPlan.dinner.name, price: mealPlan.dinner.cost, quantity: 1 },
+    { id: "1", name: mealPlan.breakfast.name, price: mealPlan.breakfast.calories * 2, quantity: 1 },
+    { id: "2", name: mealPlan.lunch.name, price: mealPlan.lunch.calories * 2, quantity: 1 },
+    { id: "3", name: mealPlan.dinner.name, price: mealPlan.dinner.calories * 2, quantity: 1 },
   ])
   
   const [isCheckingOut, setIsCheckingOut] = useState(false)

@@ -9,7 +9,8 @@ public class UserPreferencesDto {
     private String gender;
     private String activityLevel;
     private int budget;
-    private List<String> dietaryRestrictions;
+    private String diet;
+    private List<String> healthConditions;
 
     // Getters and Setters
     public int getAge() { return age; }
@@ -30,6 +31,9 @@ public class UserPreferencesDto {
     public int getBudget() { return budget; }
     public void setBudget(int budget) { this.budget = budget; }
 
-    public List<String> getDietaryRestrictions() { return dietaryRestrictions; }
-    public void setDietaryRestrictions(List<String> dietaryRestrictions) { this.dietaryRestrictions = dietaryRestrictions; }
+    public String getDiet() { return diet; }
+    public void setDiet(String diet) { this.diet = diet; }
+
+    public List<String> getHealthConditions() { return healthConditions; }
+    public void setHealthConditions(List<String> healthConditions) { this.healthConditions = healthConditions; }
 }

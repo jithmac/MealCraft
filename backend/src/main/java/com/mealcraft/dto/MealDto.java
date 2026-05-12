@@ -1,17 +1,16 @@
 package com.mealcraft.dto;
 
+import java.util.List;
+
 public class MealDto {
     private String name;
     private int calories;
-    private int cost;
+    private int carbs;
+    private int protein;
+    private int fat;
+    private List<FoodItemDto> items;
 
     public MealDto() {}
-
-    public MealDto(String name, int calories, int cost) {
-        this.name = name;
-        this.calories = calories;
-        this.cost = cost;
-    }
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
@@ -19,6 +18,15 @@ public class MealDto {
     public int getCalories() { return calories; }
     public void setCalories(int calories) { this.calories = calories; }
 
-    public int getCost() { return cost; }
-    public void setCost(int cost) { this.cost = cost; }
+    public int getCarbs() { return carbs; }
+    public void setCarbs(int carbs) { this.carbs = carbs; }
+
+    public int getProtein() { return protein; }
+    public void setProtein(int protein) { this.protein = protein; }
+
+    public int getFat() { return fat; }
+    public void setFat(int fat) { this.fat = fat; }
+
+    public List<FoodItemDto> getItems() { return items; }
+    public void setItems(List<FoodItemDto> items) { this.items = items; }
 }

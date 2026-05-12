@@ -4,17 +4,7 @@ import { HappyToast, SaladBowl, HappySteak } from "./food-characters"
 import { Coffee, Sun, Moon, Flame, PieChart as PieChartIcon, Utensils } from "lucide-react"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 
-interface Macros {
-  protein: number;
-  carbs: number;
-  fat: number;
-}
-
-interface MealPlan {
-  breakfast: { name: string; calories: number; cost: number; macros?: Macros }
-  lunch: { name: string; calories: number; cost: number; macros?: Macros }
-  dinner: { name: string; calories: number; cost: number; macros?: Macros }
-}
+import { MealPlan, Meal, FoodItem } from "@/App"
 
 interface MealStageProps {
   mealPlan: MealPlan
@@ -25,11 +15,11 @@ interface MealStageProps {
 
 const MACRO_COLORS = ['#3b82f6', '#f59e0b', '#10b981']; // Protein, Carbs, Fat
 
-function NutritionChart({ macros }: { macros: Macros }) {
+function NutritionChart({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
   const data = [
-    { name: 'Protein', value: macros.protein },
-    { name: 'Carbs', value: macros.carbs },
-    { name: 'Fat', value: macros.fat },
+    { name: 'Protein', value: protein },
+    { name: 'Carbs', value: carbs },
+    { name: 'Fat', value: fat },
   ];
 
   return (
@@ -82,13 +72,12 @@ function MealCard({
   icon: any; 
   iconBg: string; 
   iconColor: string; 
-  meal: { name: string; calories: number; cost: number; macros?: Macros }; 
+  meal: Meal; 
   character: any; 
   isGenerating: boolean; 
   emoji: string;
 }) {
   const [showNutrition, setShowNutrition] = useState(false)
-  const fallbackMacros: Macros = { protein: 20, carbs: 40, fat: 15 }
 
   return (
     <motion.div
@@ -142,13 +131,27 @@ function MealCard({
       
       <motion.div layout className="mt-auto bg-background/50 p-3 rounded-2xl border border-border/20">
         <p className="text-[15px] leading-tight font-semibold text-foreground mb-3">{meal.name}</p>
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center mb-2">
           <span className="text-xs font-medium px-2 py-1 bg-accent/10 text-accent rounded-lg flex items-center gap-1">
             <Flame className="w-3 h-3" />
             {meal.calories} kcal
           </span>
-          <span className="text-sm font-bold text-primary">Rs. {meal.cost}</span>
         </div>
+        
+        {/* Items List */}
+        {meal.items && meal.items.length > 0 && (
+          <div className="space-y-1.5 mt-2 max-h-24 overflow-y-auto custom-scrollbar pr-1">
+            {meal.items.map((item, idx) => (
+              <div key={idx} className="flex justify-between items-start text-xs border-b border-border/30 pb-1.5 last:border-0 last:pb-0">
+                <div className="font-medium text-foreground">{item.name}</div>
+                <div className="text-right text-muted-foreground whitespace-nowrap ml-2">
+                  {item.quantity} serving(s)<br/>
+                  <span className="text-[10px]">{item.amount} g/ml</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       <AnimatePresence>
@@ -159,7 +162,7 @@ function MealCard({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <NutritionChart macros={meal.macros || fallbackMacros} />
+            <NutritionChart protein={meal.protein || 0} carbs={meal.carbs || 0} fat={meal.fat || 0} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -189,8 +192,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrun
     )
   }
 
-  const totalCalories = mealPlan.breakfast.calories + mealPlan.lunch.calories + mealPlan.dinner.calories
-  const totalCost = mealPlan.breakfast.cost + mealPlan.lunch.cost + mealPlan.dinner.cost
+  const totalCalories = mealPlan.totalCals > 0 ? mealPlan.totalCals : (mealPlan.breakfast.calories + mealPlan.lunch.calories + mealPlan.dinner.calories)
   
   return (
     <div className="flex-1 flex flex-col h-full overflow-y-auto pr-2 custom-scrollbar">
@@ -207,10 +209,6 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrun
               <span className="text-xs text-muted-foreground">/ {recommendedCalories}</span>
             </div>
           </div>
-        </div>
-        <div className="text-right">
-          <div className="text-xs text-muted-foreground font-medium">Total Cost</div>
-          <div className="text-lg font-bold text-primary">Rs. {totalCost.toFixed(2)}</div>
         </div>
       </div>
 

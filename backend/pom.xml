@@ -45,6 +45,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.projog</groupId>
+			<artifactId>projog-core</artifactId>
+			<version>0.11.0</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation-test</artifactId>
 			<scope>test</scope>

@@ -1,9 +1,11 @@
 package com.mealcraft.service;
 
+import com.mealcraft.dto.FoodItemDto;
 import com.mealcraft.dto.MealDto;
 import com.mealcraft.dto.MealPlanResponseDto;
 import com.mealcraft.dto.UserPreferencesDto;
 import com.mealcraft.exception.MealPlanNotFoundException;
+import com.mealcraft.exception.UnsafeCalorieException;
 import alice.tuprolog.Prolog;
 import alice.tuprolog.SolveInfo;
 import alice.tuprolog.Theory;
@@ -12,49 +14,44 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Random;
 
 @Service
 public class PrologService {
     private Theory cachedTheory;
 
-    @PostConstruct
     public void init() {
-        try {
-            File prologFile = new File("../ai/mealCraft.pl");
-            if (!prologFile.exists()) {
-                throw new RuntimeException("Prolog file not found at " + prologFile.getAbsolutePath());
-            }
-            cachedTheory = new Theory(new FileInputStream(prologFile));
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to load Prolog file", e);
-        }
+        // Removed caching so changes to Prolog file reflect immediately without restart
     }
 
     public MealPlanResponseDto generateMealPlan(UserPreferencesDto prefs) {
-        String diet = "none";
-        if (prefs.getDietaryRestrictions() != null && !prefs.getDietaryRestrictions().isEmpty()) {
-            diet = prefs.getDietaryRestrictions().get(0).toLowerCase();
+        int tdee = calculateTDEE(prefs);
+        if (tdee < 1500) {
+            throw new UnsafeCalorieException("Calculated calories are below 1500 kcal (" + tdee + " kcal). Please consult a doctor.");
+        }
+        if (tdee > 4500) {
+            throw new UnsafeCalorieException("Calculated calories are above 4500 kcal (" + tdee + " kcal). Please consult a nutritionist.");
         }
 
-        String health = "none"; 
+        String diet = prefs.getDiet() != null && !prefs.getDiet().isEmpty() ? prefs.getDiet().toLowerCase() : "omnivore";
         
-        int tdee = calculateTDEE(prefs);
-        int targetCals = Math.min(Math.max(tdee, 800), 1400);
-        int maxBudget = Math.max(prefs.getBudget(), 500);
+        List<String> conditions = prefs.getHealthConditions() != null ? prefs.getHealthConditions() : new ArrayList<>();
+        String conditionsStr = "[" + String.join(",", conditions) + "]";
 
-        String query = String.format("generate_daily_plan(%d, %d, %s, %s, Plan, DayCals, DayCost).",
-                targetCals, maxBudget, diet, health);
+        String query = String.format("backup_meal_plan(%d, %s, %s, Plan, TotalCals).", tdee, diet, conditionsStr);
 
-        // Create a new engine for every request to ensure thread-safety and clean state
         Prolog engine = new Prolog();
         try {
-            engine.setTheory(cachedTheory);
+            File prologFile = new File("../ai/mealCraft.pl");
+            Theory theory = new Theory(new FileInputStream(prologFile));
+            engine.setTheory(theory);
             SolveInfo result = engine.solve(query);
             
-            // Collect up to 10 valid combinations
-            java.util.List<SolveInfo> validPlans = new java.util.ArrayList<>();
+            List<SolveInfo> validPlans = new ArrayList<>();
             while (result.isSuccess() && validPlans.size() < 10) {
                 validPlans.add(result);
                 if (!engine.hasOpenAlternatives()) break;
@@ -62,17 +59,26 @@ public class PrologService {
             }
 
             if (!validPlans.isEmpty()) {
-                // Pick a random plan from the valid ones
-                SolveInfo randomResult = validPlans.get(new java.util.Random().nextInt(validPlans.size()));
+                SolveInfo randomResult = validPlans.get(new Random().nextInt(validPlans.size()));
                 String planStr = randomResult.getVarValue("Plan").toString();
+                int totalCals = (int) Math.round(Double.parseDouble(randomResult.getVarValue("TotalCals").toString()));
 
                 MealPlanResponseDto response = new MealPlanResponseDto();
-                response.setBreakfast(parseMeal(engine, planStr, "breakfast"));
-                response.setLunch(parseMeal(engine, planStr, "lunch"));
-                response.setDinner(parseMeal(engine, planStr, "dinner"));
+                response.setTotalCals(totalCals);
                 
-                response.setTotalCals(Integer.parseInt(randomResult.getVarValue("DayCals").toString()));
-                response.setTotalCost(Integer.parseInt(randomResult.getVarValue("DayCost").toString()));
+                SolveInfo macroRes = engine.solve(String.format("plan_macro_total(%s, Carbs, Protein, Fat).", planStr));
+                if (macroRes.isSuccess()) {
+                    response.setTotalCarbs((int) Math.round(Double.parseDouble(macroRes.getVarValue("Carbs").toString())));
+                    response.setTotalProtein((int) Math.round(Double.parseDouble(macroRes.getVarValue("Protein").toString())));
+                    response.setTotalFat((int) Math.round(Double.parseDouble(macroRes.getVarValue("Fat").toString())));
+                }
+
+                Matcher m = Pattern.compile("plan\\(\\[(.*?)\\],\\s*\\[(.*?)\\],\\s*\\[(.*?)\\]\\)").matcher(planStr);
+                if (m.find()) {
+                    response.setBreakfast(parseMeal(engine, "Breakfast", m.group(1)));
+                    response.setLunch(parseMeal(engine, "Lunch", m.group(2)));
+                    response.setDinner(parseMeal(engine, "Dinner", m.group(3)));
+                }
 
                 return response;
             }
@@ -80,28 +86,59 @@ public class PrologService {
             e.printStackTrace();
         }
 
-        throw new MealPlanNotFoundException("No meal plan found for " + targetCals + " kcal and budget Rs. " + maxBudget);
+        throw new MealPlanNotFoundException("No meal plan found for " + tdee + " kcal with the selected preferences.");
     }
 
-    private MealDto parseMeal(Prolog engine, String planStr, String mealType) {
-        Pattern p = Pattern.compile(mealType + "\\(\\[(.*?)\\]\\)");
-        Matcher m = p.matcher(planStr);
-        if (m.find()) {
-            String itemsStr = m.group(1); 
-            String[] items = itemsStr.split(",");
-            String name = formatName(items[0].trim()) + " with " + formatName(items[1].trim()) + " & " + formatName(items[2].trim());
+    private MealDto parseMeal(Prolog engine, String name, String itemsStr) {
+        MealDto meal = new MealDto();
+        meal.setName(name);
+        List<FoodItemDto> foodItems = new ArrayList<>();
 
-            String nutritionQuery = String.format("meal_nutrition([%s], Cals, Prot, Carbs, Fats, Cost).", itemsStr);
+        if (itemsStr == null || itemsStr.trim().isEmpty()) {
+            return meal;
+        }
+
+        Matcher m = Pattern.compile("item\\(([a-zA-Z0-9_]+),\\s*([0-9]+)\\)").matcher(itemsStr);
+        while (m.find()) {
+            String food = m.group(1);
+            int qty = Integer.parseInt(m.group(2));
+            
+            FoodItemDto item = new FoodItemDto();
+            item.setName(formatName(food));
+            item.setQuantity(qty);
+            
             try {
-                SolveInfo nRes = engine.solve(nutritionQuery);
-                if (nRes.isSuccess()) {
-                    int cals = Integer.parseInt(nRes.getVarValue("Cals").toString());
-                    int cost = Integer.parseInt(nRes.getVarValue("Cost").toString());
-                    return new MealDto(name, cals, cost);
+                SolveInfo amountRes = engine.solve(String.format("food_amount(%s, %d, Amount).", food, qty));
+                if (amountRes.isSuccess()) {
+                    item.setAmount((int) Math.round(Double.parseDouble(amountRes.getVarValue("Amount").toString())));
+                }
+                
+                SolveInfo calRes = engine.solve(String.format("item_calories(item(%s, %d), Cals).", food, qty));
+                if (calRes.isSuccess()) {
+                    item.setCalories((int) Math.round(Double.parseDouble(calRes.getVarValue("Cals").toString())));
                 }
             } catch (Exception e) {}
+            
+            foodItems.add(item);
         }
-        return new MealDto("Unknown Meal", 0, 0);
+        
+        meal.setItems(foodItems);
+        
+        try {
+            SolveInfo macroRes = engine.solve(String.format("meal_macro_total([%s], Carbs, Protein, Fat).", itemsStr));
+            if (macroRes.isSuccess()) {
+                meal.setCarbs((int) Math.round(Double.parseDouble(macroRes.getVarValue("Carbs").toString())));
+                meal.setProtein((int) Math.round(Double.parseDouble(macroRes.getVarValue("Protein").toString())));
+                meal.setFat((int) Math.round(Double.parseDouble(macroRes.getVarValue("Fat").toString())));
+            }
+            
+            SolveInfo calRes = engine.solve(String.format("meal_total([%s], Cals).", itemsStr));
+            if (calRes.isSuccess()) {
+                meal.setCalories((int) Math.round(Double.parseDouble(calRes.getVarValue("Cals").toString())));
+            }
+        } catch (Exception e) {}
+
+        return meal;
     }
 
     private String formatName(String atom) {

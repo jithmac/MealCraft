@@ -5,7 +5,9 @@ public class MealPlanResponseDto {
     private MealDto lunch;
     private MealDto dinner;
     private int totalCals;
-    private int totalCost;
+    private int totalCarbs;
+    private int totalProtein;
+    private int totalFat;
 
     public MealPlanResponseDto() {}
 
@@ -21,6 +23,12 @@ public class MealPlanResponseDto {
     public int getTotalCals() { return totalCals; }
     public void setTotalCals(int totalCals) { this.totalCals = totalCals; }
 
-    public int getTotalCost() { return totalCost; }
-    public void setTotalCost(int totalCost) { this.totalCost = totalCost; }
+    public int getTotalCarbs() { return totalCarbs; }
+    public void setTotalCarbs(int totalCarbs) { this.totalCarbs = totalCarbs; }
+
+    public int getTotalProtein() { return totalProtein; }
+    public void setTotalProtein(int totalProtein) { this.totalProtein = totalProtein; }
+
+    public int getTotalFat() { return totalFat; }
+    public void setTotalFat(int totalFat) { this.totalFat = totalFat; }
 }
