@@ -135,6 +135,15 @@ public class PrologService {
             item.setName(formatName(food));
             item.setQuantity(qty);
             
+            // Look up cost from database
+            try {
+                java.util.Optional<FoodEntity> foodOpt = foodRepository.findByFoodName(food);
+                if (foodOpt.isPresent()) {
+                    Double cost = foodOpt.get().getCostLkr();
+                    item.setCostLkr(cost != null ? cost * qty : 0);
+                }
+            } catch (Exception ignored) {}
+
             try {
                 SolveInfo amountRes = engine.solve(String.format("food_amount(%s, %d, Amount).", food, qty));
                 if (amountRes.isSuccess()) {

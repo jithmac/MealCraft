@@ -24,6 +24,7 @@ export interface FoodItem {
   quantity: number
   amount: number
   calories: number
+  costLkr?: number
 }
 
 export interface Meal {
@@ -103,6 +104,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
   const [showMealPopup, setShowMealPopup] = useState(false)
   const [healthScore, setHealthScore] = useState(78)
   const [error, setError] = useState<string | null>(null)
+  const [selectedMealForOrder, setSelectedMealForOrder] = useState<{meal: Meal, type: string} | null>(null)
 
   const recommendedCalories = calculateTDEE(preferences)
 
@@ -153,6 +155,11 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
     } finally {
       setIsGenerating(false)
     }
+  }
+
+  const handleSelectMeal = (meal: Meal, type: string) => {
+    setSelectedMealForOrder({ meal, type })
+    setShowMealPopup(false)
   }
 
   return (
@@ -252,6 +259,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
                   isGenerating={isGenerating}
                   recommendedCalories={recommendedCalories}
                   isShrunk={true}
+                  onSelectMeal={handleSelectMeal}
                 />
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center h-full p-4">
@@ -299,7 +307,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
 
           {/* Quick Order */}
           <div className="flex-1 bg-card/70 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 overflow-hidden relative">
-            <QuickOrder mealPlan={mealPlan} budget={20000} />
+            <QuickOrder selectedMeal={selectedMealForOrder} budget={20000} onOrderSuccess={() => setSelectedMealForOrder(null)} />
           </div>
         </motion.div>
       </div>
@@ -317,6 +325,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
               isGenerating={isGenerating}
               recommendedCalories={recommendedCalories}
               isShrunk={false}
+              onSelectMeal={handleSelectMeal}
             />
           </div>
         </DialogContent>

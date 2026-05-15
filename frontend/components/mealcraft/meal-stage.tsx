@@ -11,6 +11,7 @@ interface MealStageProps {
   isGenerating: boolean
   recommendedCalories: number
   isShrunk?: boolean
+  onSelectMeal?: (meal: Meal, type: string) => void
 }
 
 const MACRO_COLORS = ['#3b82f6', '#f59e0b', '#10b981']; // Protein, Carbs, Fat
@@ -66,7 +67,8 @@ function MealCard({
   meal,
   character,
   isGenerating,
-  emoji
+  emoji,
+  onOrder
 }: {
   title: string;
   icon: any;
@@ -76,6 +78,7 @@ function MealCard({
   character: any;
   isGenerating: boolean;
   emoji: string;
+  onOrder?: () => void;
 }) {
   const [showNutrition, setShowNutrition] = useState(false)
 
@@ -141,6 +144,19 @@ function MealCard({
             ))}
           </div>
         )}
+
+        <div className="mt-4 flex justify-end">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={onOrder}
+            disabled={isGenerating || meal.items?.length === 0}
+            className="w-full py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
+          >
+            <Utensils className="w-4 h-4" />
+            Order this Meal
+          </motion.button>
+        </div>
       </motion.div>
 
       <AnimatePresence>
@@ -159,7 +175,7 @@ function MealCard({
   )
 }
 
-export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrunk }: MealStageProps) {
+export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrunk, onSelectMeal }: MealStageProps) {
   if (isShrunk) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center h-full p-4">
@@ -212,6 +228,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrun
           character={<HappyToast />}
           isGenerating={isGenerating}
           emoji="🍳"
+          onOrder={() => onSelectMeal?.(mealPlan.breakfast, 'Breakfast')}
         />
         <MealCard
           title="Lunch"
@@ -222,6 +239,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrun
           character={<SaladBowl />}
           isGenerating={isGenerating}
           emoji="🥗"
+          onOrder={() => onSelectMeal?.(mealPlan.lunch, 'Lunch')}
         />
         <MealCard
           title="Dinner"
@@ -232,6 +250,7 @@ export function MealStage({ mealPlan, isGenerating, recommendedCalories, isShrun
           character={<HappySteak />}
           isGenerating={isGenerating}
           emoji="🍖"
+          onOrder={() => onSelectMeal?.(mealPlan.dinner, 'Dinner')}
         />
       </div>
     </div>
