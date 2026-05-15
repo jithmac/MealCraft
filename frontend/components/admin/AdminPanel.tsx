@@ -12,6 +12,8 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
   const [foods, setFoods] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editFood, setEditFood] = useState<any>(null)
   const [newFood, setNewFood] = useState({
     foodName: '',
     origin: '',
@@ -77,6 +79,25 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
           micronutrients: '', allergens: '', storageNote: '',
           mealTags: '', dietaryTags: '', costLkr: 0
         })
+        fetchData()
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleEditFoodSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editFood) return
+    try {
+      const res = await fetch(`http://localhost:8080/api/admin/foods/${editFood.foodId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editFood)
+      })
+      if (res.ok) {
+        setShowEditModal(false)
+        setEditFood(null)
         fetchData()
       }
     } catch (err) {
@@ -213,7 +234,13 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
                   <td className="p-4"><span className="px-2 py-1 bg-secondary rounded-lg text-xs">{food.category}</span></td>
                   <td className="p-4">{food.calories} kcal</td>
                   <td className="p-4 text-right">
-                    <button className="p-2 text-muted-foreground hover:text-primary transition-colors"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => { 
+                      const sanitizedFood = Object.fromEntries(
+                        Object.entries(food).map(([key, value]) => [key, value === null ? '' : value])
+                      );
+                      setEditFood(sanitizedFood); 
+                      setShowEditModal(true); 
+                    }} className="p-2 text-muted-foreground hover:text-primary transition-colors"><Edit className="w-4 h-4" /></button>
                     <button onClick={() => handleDeleteFood(food.foodId)} className="p-2 text-muted-foreground hover:text-destructive transition-colors"><Trash className="w-4 h-4" /></button>
                   </td>
                 </tr>
@@ -335,6 +362,111 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
               <div className="md:col-span-2 pt-4 flex justify-end gap-3">
                 <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground font-medium">Cancel</button>
                 <button type="submit" className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-medium">Save Food Item</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {showEditModal && editFood && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-card p-6 rounded-3xl shadow-2xl w-full max-w-3xl border border-border/50 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-fredoka font-semibold">Edit Food Item</h3>
+              <button onClick={() => setShowEditModal(false)} className="p-2 text-muted-foreground hover:text-foreground bg-muted rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditFoodSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Food Name</label>
+                <input required type="text" value={editFood.foodName} onChange={e => setEditFood({...editFood, foodName: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Category</label>
+                <select required value={editFood.category} onChange={e => setEditFood({...editFood, category: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select category</option>
+                  <option value="grain">Grain</option>
+                  <option value="legume">Legume</option>
+                  <option value="vegetable">Vegetable</option>
+                  <option value="fruit">Fruit</option>
+                  <option value="condiment">Condiment</option>
+                  <option value="meat">Meat</option>
+                  <option value="beverage">Beverage</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="nut">Nut</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Origin</label>
+                <select value={editFood.origin} onChange={e => setEditFood({...editFood, origin: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select origin</option>
+                  <option value="sri_lankan">Sri Lankan</option>
+                  <option value="international">International</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Serving Size</label>
+                <input type="text" value={editFood.servingSize} onChange={e => setEditFood({...editFood, servingSize: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Calories (kcal)</label>
+                <input required type="number" value={editFood.calories} onChange={e => setEditFood({...editFood, calories: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Carbs (g)</label>
+                <input required type="number" value={editFood.carbs} onChange={e => setEditFood({...editFood, carbs: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Protein (g)</label>
+                <input required type="number" value={editFood.protein} onChange={e => setEditFood({...editFood, protein: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Fats (g)</label>
+                <input required type="number" value={editFood.fats} onChange={e => setEditFood({...editFood, fats: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-muted-foreground">Micronutrients</label>
+                <input type="text" value={editFood.micronutrients} onChange={e => setEditFood({...editFood, micronutrients: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Allergens</label>
+                <input type="text" value={editFood.allergens} onChange={e => setEditFood({...editFood, allergens: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Meal Tags</label>
+                <select value={editFood.mealTags} onChange={e => setEditFood({...editFood, mealTags: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select meal tags</option>
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="breakfast, lunch">Breakfast, Lunch</option>
+                  <option value="breakfast, dinner">Breakfast, Dinner</option>
+                  <option value="lunch, dinner">Lunch, Dinner</option>
+                  <option value="breakfast, lunch, dinner">Breakfast, Lunch, Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Dietary Tags</label>
+                <input type="text" placeholder="e.g. Vegan, Keto" value={editFood.dietaryTags} onChange={e => setEditFood({...editFood, dietaryTags: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Cost (LKR)</label>
+                <input required type="number" value={editFood.costLkr} onChange={e => setEditFood({...editFood, costLkr: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-muted-foreground">Storage Note</label>
+                <input type="text" value={editFood.storageNote} onChange={e => setEditFood({...editFood, storageNote: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              
+              <div className="md:col-span-2 pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-6 py-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground font-medium">Cancel</button>
+                <button type="submit" className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-medium">Save Changes</button>
               </div>
             </form>
           </motion.div>
