@@ -7,6 +7,7 @@ import { MoodTracker } from '@/components/mealcraft/mood-tracker'
 import { QuickOrder } from '@/components/mealcraft/quick-order'
 import { StrongAvocado, ChefHat } from '@/components/mealcraft/food-characters'
 import { AdminPanel } from '@/components/admin/AdminPanel'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 
 export interface UserPreferences {
   age: number
@@ -99,6 +100,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
   const [mealPlan, setMealPlan] = useState<MealPlan>(sampleMealPlan)
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasGenerated, setHasGenerated] = useState(false)
+  const [showMealPopup, setShowMealPopup] = useState(false)
   const [healthScore, setHealthScore] = useState(78)
   const [error, setError] = useState<string | null>(null)
 
@@ -106,6 +108,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true)
+    setShowMealPopup(true)
     setError(null)
 
     try {
@@ -188,7 +191,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
       {/* Main Bento Grid */}
       <div className="h-full grid grid-cols-1 lg:grid-cols-12 grid-rows-[auto_1fr_auto] lg:grid-rows-1 gap-4 md:gap-6 max-w-[1800px] mx-auto">
         {/* Left Column - Control Center */}
-        <motion.div 
+        <motion.div
           layout
           className={`${hasGenerated ? 'lg:col-span-3' : 'lg:col-span-5'} lg:row-span-1`}
           initial={{ x: -50, opacity: 0 }}
@@ -205,9 +208,9 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
                 <p className="text-xs text-muted-foreground">AI Smart Planner</p>
               </div>
             </div>
-            
+
             <div className="flex-1 min-h-0">
-              <ControlCenter 
+              <ControlCenter
                 preferences={preferences}
                 onPreferencesChange={setPreferences}
                 recommendedCalories={recommendedCalories}
@@ -221,7 +224,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
         </motion.div>
 
         {/* Center Column - Meal Stage */}
-        <motion.div 
+        <motion.div
           layout
           className={`${hasGenerated ? 'lg:col-span-6' : 'lg:col-span-4'} lg:row-span-1`}
           initial={{ y: 50, opacity: 0 }}
@@ -231,7 +234,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
           <div className="h-full bg-card/60 backdrop-blur-xl rounded-[2rem] border border-border/50 shadow-xl p-6 relative overflow-hidden">
             {/* Decorative gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
-            
+
             <div className="relative z-10 h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -243,18 +246,46 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
                 </button>
               </div>
 
-              <MealStage 
-                mealPlan={mealPlan}
-                isGenerating={isGenerating}
-                recommendedCalories={recommendedCalories}
-                isShrunk={!hasGenerated}
-              />
+              {!hasGenerated && !isGenerating ? (
+                <MealStage
+                  mealPlan={mealPlan}
+                  isGenerating={isGenerating}
+                  recommendedCalories={recommendedCalories}
+                  isShrunk={true}
+                />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center h-full p-4">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center p-8 bg-card/40 backdrop-blur-sm border border-border/20 rounded-[2rem] max-w-sm shadow-sm"
+                  >
+                    <div className="w-16 h-16 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-5">
+                      <Sparkles className="w-8 h-8 text-accent" />
+                    </div>
+                    <h3 className="font-fredoka text-xl font-semibold mb-3">
+                      {isGenerating ? "Crafting your menu..." : "Menu Generated!"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+                      {isGenerating ? "Please wait while we craft your perfect day of eating." : "Your personalized meal plan is ready."}
+                    </p>
+                    {!isGenerating && (
+                      <button
+                        onClick={() => setShowMealPopup(true)}
+                        className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm w-full"
+                      >
+                        View Full Meal Plan
+                      </button>
+                    )}
+                  </motion.div>
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
 
         {/* Right Column - Mood + Quick Order */}
-        <motion.div 
+        <motion.div
           layout
           className="lg:col-span-3 lg:row-span-1 flex flex-col gap-4 md:gap-6"
           initial={{ x: 50, opacity: 0 }}
@@ -272,6 +303,24 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
           </div>
         </motion.div>
       </div>
+
+      {/* Meal Plan Popup */}
+      <Dialog open={showMealPopup} onOpenChange={setShowMealPopup}>
+        <DialogContent className="w-[95vw] !max-w-7xl h-[90vh] sm:h-[85vh] p-0 border-border/50 bg-card/95 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col shadow-2xl">
+          <DialogHeader className="p-6 pb-4 border-b border-border/30 bg-background/50">
+            <DialogTitle className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">Personalized for your goals</DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden p-6 bg-background/20">
+            <MealStage
+              mealPlan={mealPlan}
+              isGenerating={isGenerating}
+              recommendedCalories={recommendedCalories}
+              isShrunk={false}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

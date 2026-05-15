@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Lock, Utensils, ShoppingBag, LogOut, ArrowLeft, Plus, Trash, Edit } from 'lucide-react'
+import { Lock, Utensils, ShoppingBag, LogOut, ArrowLeft, Plus, Trash, Edit, X } from 'lucide-react'
 
 export function AdminPanel({ onBack }: { onBack: () => void }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -11,6 +11,23 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
 
   const [foods, setFoods] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newFood, setNewFood] = useState({
+    foodName: '',
+    origin: '',
+    category: '',
+    servingSize: '',
+    calories: 0,
+    carbs: 0,
+    protein: 0,
+    fats: 0,
+    micronutrients: '',
+    allergens: '',
+    storageNote: '',
+    mealTags: '',
+    dietaryTags: '',
+    costLkr: 0
+  })
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +56,29 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
       setFoods(await fRes.json())
       const oRes = await fetch('http://localhost:8080/api/admin/orders')
       setOrders(await oRes.json())
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const handleAddFood = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      const res = await fetch('http://localhost:8080/api/admin/foods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newFood)
+      })
+      if (res.ok) {
+        setShowAddModal(false)
+        setNewFood({
+          foodName: '', origin: '', category: '', servingSize: '',
+          calories: 0, carbs: 0, protein: 0, fats: 0,
+          micronutrients: '', allergens: '', storageNote: '',
+          mealTags: '', dietaryTags: '', costLkr: 0
+        })
+        fetchData()
+      }
     } catch (err) {
       console.error(err)
     }
@@ -135,7 +175,10 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
             {activeTab === 'foods' ? 'Food Knowledge Base' : 'Recent Orders'}
           </h2>
           {activeTab === 'foods' && (
-            <button className="bg-primary text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 font-medium">
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-xl flex items-center gap-2 font-medium"
+            >
               <Plus className="w-4 h-4" /> Add Food
             </button>
           )}
@@ -192,6 +235,111 @@ export function AdminPanel({ onBack }: { onBack: () => void }) {
           ) : null}
         </div>
       </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="bg-card p-6 rounded-3xl shadow-2xl w-full max-w-3xl border border-border/50 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-fredoka font-semibold">Add New Food Item</h3>
+              <button onClick={() => setShowAddModal(false)} className="p-2 text-muted-foreground hover:text-foreground bg-muted rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleAddFood} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Food Name</label>
+                <input required type="text" value={newFood.foodName} onChange={e => setNewFood({...newFood, foodName: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Category</label>
+                <select required value={newFood.category} onChange={e => setNewFood({...newFood, category: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select category</option>
+                  <option value="grain">Grain</option>
+                  <option value="legume">Legume</option>
+                  <option value="vegetable">Vegetable</option>
+                  <option value="fruit">Fruit</option>
+                  <option value="condiment">Condiment</option>
+                  <option value="meat">Meat</option>
+                  <option value="beverage">Beverage</option>
+                  <option value="dairy">Dairy</option>
+                  <option value="nut">Nut</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Origin</label>
+                <select value={newFood.origin} onChange={e => setNewFood({...newFood, origin: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select origin</option>
+                  <option value="sri_lankan">Sri Lankan</option>
+                  <option value="international">International</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Serving Size</label>
+                <input type="text" value={newFood.servingSize} onChange={e => setNewFood({...newFood, servingSize: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Calories (kcal)</label>
+                <input required type="number" value={newFood.calories} onChange={e => setNewFood({...newFood, calories: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Carbs (g)</label>
+                <input required type="number" value={newFood.carbs} onChange={e => setNewFood({...newFood, carbs: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Protein (g)</label>
+                <input required type="number" value={newFood.protein} onChange={e => setNewFood({...newFood, protein: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Fats (g)</label>
+                <input required type="number" value={newFood.fats} onChange={e => setNewFood({...newFood, fats: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-muted-foreground">Micronutrients</label>
+                <input type="text" value={newFood.micronutrients} onChange={e => setNewFood({...newFood, micronutrients: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Allergens</label>
+                <input type="text" value={newFood.allergens} onChange={e => setNewFood({...newFood, allergens: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Meal Tags</label>
+                <select value={newFood.mealTags} onChange={e => setNewFood({...newFood, mealTags: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary appearance-none">
+                  <option value="" disabled>Select meal tags</option>
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="breakfast, lunch">Breakfast, Lunch</option>
+                  <option value="breakfast, dinner">Breakfast, Dinner</option>
+                  <option value="lunch, dinner">Lunch, Dinner</option>
+                  <option value="breakfast, lunch, dinner">Breakfast, Lunch, Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Dietary Tags</label>
+                <input type="text" placeholder="e.g. Vegan, Keto" value={newFood.dietaryTags} onChange={e => setNewFood({...newFood, dietaryTags: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-muted-foreground">Cost (LKR)</label>
+                <input required type="number" value={newFood.costLkr} onChange={e => setNewFood({...newFood, costLkr: Number(e.target.value)})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              <div className="space-y-1 md:col-span-2">
+                <label className="text-sm font-medium text-muted-foreground">Storage Note</label>
+                <input type="text" value={newFood.storageNote} onChange={e => setNewFood({...newFood, storageNote: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2 outline-none focus:border-primary" />
+              </div>
+              
+              <div className="md:col-span-2 pt-4 flex justify-end gap-3">
+                <button type="button" onClick={() => setShowAddModal(false)} className="px-6 py-2 rounded-xl bg-muted text-muted-foreground hover:text-foreground font-medium">Cancel</button>
+                <button type="submit" className="px-6 py-2 rounded-xl bg-primary text-primary-foreground font-medium">Save Food Item</button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   )
 }
