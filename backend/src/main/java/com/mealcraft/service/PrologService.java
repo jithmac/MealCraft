@@ -4,16 +4,20 @@ import com.mealcraft.dto.FoodItemDto;
 import com.mealcraft.dto.MealDto;
 import com.mealcraft.dto.MealPlanResponseDto;
 import com.mealcraft.dto.UserPreferencesDto;
+import com.mealcraft.entity.FoodEntity;
+import com.mealcraft.repository.FoodRepository;
 import com.mealcraft.exception.MealPlanNotFoundException;
 import com.mealcraft.exception.UnsafeCalorieException;
 import alice.tuprolog.Prolog;
 import alice.tuprolog.SolveInfo;
 import alice.tuprolog.Theory;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import jakarta.annotation.PostConstruct;
 import java.io.File;
 import java.io.FileInputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -22,10 +26,11 @@ import java.util.Random;
 
 @Service
 public class PrologService {
-    private Theory cachedTheory;
+
+    @Autowired
+    private FoodRepository foodRepository;
 
     public void init() {
-        // Removed caching so changes to Prolog file reflect immediately without restart
     }
 
     public MealPlanResponseDto generateMealPlan(UserPreferencesDto prefs) {
@@ -47,7 +52,30 @@ public class PrologService {
         Prolog engine = new Prolog();
         try {
             File prologFile = new File("../ai/mealCraft.pl");
-            Theory theory = new Theory(new FileInputStream(prologFile));
+            String baseTheory = new String(Files.readAllBytes(prologFile.toPath()));
+            
+            // Build dynamic theory from database
+            List<FoodEntity> foods = foodRepository.findAll();
+            StringBuilder dynamicTheory = new StringBuilder();
+            for (FoodEntity food : foods) {
+                dynamicTheory.append(String.format("food(%s, %s, %s, %d, %s, %s, %s, %s, [%s], [%s], '%s', [%s], [%s]).\n",
+                        food.getFoodName(),
+                        food.getOrigin() != null && !food.getOrigin().isEmpty() ? food.getOrigin() : "international",
+                        food.getCategory(),
+                        food.getServingSize(),
+                        food.getCalories(),
+                        food.getCarbs(),
+                        food.getProtein(),
+                        food.getFats(),
+                        food.getMicronutrients() != null ? food.getMicronutrients() : "",
+                        food.getAllergens() != null ? food.getAllergens() : "",
+                        food.getStorageNote() != null ? food.getStorageNote().replace("'", "''") : "",
+                        food.getMealTags() != null ? food.getMealTags() : "",
+                        food.getDietaryTags() != null ? food.getDietaryTags() : ""
+                ));
+            }
+
+            Theory theory = new Theory(dynamicTheory.toString() + "\n" + baseTheory);
             engine.setTheory(theory);
             SolveInfo result = engine.solve(query);
             
@@ -172,3 +200,4 @@ public class PrologService {
         return (int) Math.round(bmr * multiplier);
     }
 }
+

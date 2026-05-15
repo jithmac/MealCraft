@@ -6,6 +6,7 @@ import { MealStage } from '@/components/mealcraft/meal-stage'
 import { MoodTracker } from '@/components/mealcraft/mood-tracker'
 import { QuickOrder } from '@/components/mealcraft/quick-order'
 import { StrongAvocado, ChefHat } from '@/components/mealcraft/food-characters'
+import { AdminPanel } from '@/components/admin/AdminPanel'
 
 export interface UserPreferences {
   age: number
@@ -83,7 +84,17 @@ function calculateTDEE(prefs: UserPreferences): number {
   return Math.round(bmr * multipliers[prefs.activityLevel])
 }
 
-export default function App() {
+export default function Root() {
+  const [view, setView] = useState<'main' | 'admin'>('main')
+
+  if (view === 'admin') {
+    return <AdminPanel onBack={() => setView('main')} />
+  }
+
+  return <MainApp onAdminClick={() => setView('admin')} />
+}
+
+export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
   const [preferences, setPreferences] = useState<UserPreferences>(defaultPreferences)
   const [mealPlan, setMealPlan] = useState<MealPlan>(sampleMealPlan)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -227,6 +238,9 @@ export default function App() {
                   <h2 className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</h2>
                   <p className="text-sm text-muted-foreground">Personalized for your goals</p>
                 </div>
+                <button onClick={onAdminClick} className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors border border-border/50 bg-background rounded-lg px-3 py-1.5 shadow-sm">
+                  Admin Panel
+                </button>
               </div>
 
               <MealStage 
