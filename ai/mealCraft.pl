@@ -1,17 +1,18 @@
 % ============================================================
-% MealCraft - Prolog Food Knowledge Base and Meal Planner
+% MealCraft - Prolog Food Knowledge Base and Dynamic Meal Planner
 % AI Based Smart Meal Planner
-% Compatible with SWI-Prolog
+% Compatible with tuProlog (alice.tuprolog)
 %
 % Main queries:
-%   ?- meal_plan(1800, omnivore, [], Plan, Total).
-%   ?- meal_plan(2500, omnivore, [], Plan, Total).
-%   ?- meal_plan(4000, omnivore, [], Plan, Total).
-%   ?- meal_plan(4000, high_protein, [], Plan, Total).
-%   ?- meal_plan(2200, vegetarian, [diabetes], Plan, Total).
-%   ?- food_good_for(diabetes, Food).
-%   ?- food_bad_for(hypertension, Food).
-%   ?- food_amount(oats, 3, Amount).
+%   ?- meal_plan(1800, omnivore, [], normal, Plan, Total).
+%   ?- meal_plan(2500, vegetarian, [diabetes], normal, Plan, Total).
+%   ?- backup_meal_plan(2200, omnivore, [], diet, Plan, Total).
+%
+% This engine DYNAMICALLY assembles meals by:
+%   1. Filtering foods by meal type, diet, and health conditions
+%   2. Picking different combinations of foods for each meal
+%   3. Validating total calories fall within a target range
+%   4. Producing many valid solutions for Java-side random selection
 %
 % NOTE:
 % This is an educational prototype. It is not medical advice.
@@ -40,108 +41,25 @@
 % ).
 
 % ============================================================
-% 50 FOOD DATABASE
+% FOOD DATABASE
+% ============================================================
+% Foods are injected dynamically from the MySQL database
+% via PrologService.java. The food/13 facts are prepended
+% to this theory at runtime.
 % ============================================================
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+% ============================================================
+% LIST UTILITIES (required for tuProlog compatibility)
+% ============================================================
+% tuProlog may not include these as built-ins.
+
+member(X, [X|_]).
+member(X, [_|T]) :- member(X, T).
+
+append([], L, L).
+append([H|T], L, [H|R]) :- append(T, L, R).
 
 % ============================================================
 % BASIC ACCESS RULES
@@ -214,16 +132,9 @@ suitable_for_diet(Food, Diet) :-
 % HEALTH CONDITIONS
 % ============================================================
 % Supported health conditions:
-%   overweight,
-%   diabetes,
-%   hypertension,
-%   heart_disease,
-%   kidney_disease,
-%   gout,
-%   celiac,
-%   lactose_intolerance,
-%   ibs,
-%   pregnancy
+%   overweight, diabetes, hypertension, heart_disease,
+%   kidney_disease, gout, celiac, lactose_intolerance,
+%   ibs, pregnancy
 
 avoid_tag(overweight, high_calorie_dense).
 avoid_tag(overweight, high_sat_fat_caution).
@@ -360,187 +271,85 @@ plan_macro_total(plan(Breakfast, Lunch, Dinner), Carbs, Protein, Fat) :-
     Protein is BProtein + LProtein + DProtein,
     Fat is BFat + LFat + DFat.
 
-valid_calorie_range(TargetCalories, TotalCalories) :-
-    Min is TargetCalories - 250,
-    Max is TargetCalories + 250,
-    TotalCalories >= Min,
-    TotalCalories =< Max.
+% ============================================================
+% FOOD CATEGORIES FOR MEAL ASSEMBLY
+% ============================================================
+% Foods are classified into roles for building balanced meals.
 
-valid_high_calorie_range(TargetCalories, TotalCalories) :-
-    TargetCalories >= 3800,
-    Min is TargetCalories - 350,
-    Max is TargetCalories + 350,
-    TotalCalories >= Min,
-    TotalCalories =< Max.
+food_category(Food, Category) :-
+    food(Food, _, Category, _, _, _, _, _, _, _, _, _, _).
 
-item_allowed(item(Food, _Quantity), MealType, Diet, Conditions) :-
+% A food is a "base" (starch/carb) if its category is grain, tuber, or cereal.
+is_base(Food) :- food_category(Food, grain).
+is_base(Food) :- food_category(Food, tuber).
+is_base(Food) :- food_category(Food, cereal).
+is_base(Food) :- food_category(Food, bread).
+
+% A food is a "protein source" if its category is protein, legume, fish, dairy, or meat.
+is_protein_source(Food) :- food_category(Food, protein).
+is_protein_source(Food) :- food_category(Food, meat).
+is_protein_source(Food) :- food_category(Food, legume).
+is_protein_source(Food) :- food_category(Food, fish).
+is_protein_source(Food) :- food_category(Food, dairy).
+is_protein_source(Food) :- food_category(Food, egg).
+
+% A food is a "side" (vegetable/accompaniment).
+is_side(Food) :- food_category(Food, vegetable).
+is_side(Food) :- food_category(Food, curry).
+is_side(Food) :- food_category(Food, mallung).
+is_side(Food) :- food_category(Food, condiment).
+is_side(Food) :- food_category(Food, salad).
+
+% A food is a "light item" (fruit, drink, snack, dairy).
+is_light(Food) :- food_category(Food, fruit).
+is_light(Food) :- food_category(Food, beverage).
+is_light(Food) :- food_category(Food, snack).
+is_light(Food) :- food_category(Food, nut).
+
+% ============================================================
+% DYNAMIC FOOD SELECTION
+% ============================================================
+% Pick a food that is suitable for a given meal type, diet,
+% and set of health conditions.
+
+pick_food(Food, MealType, Diet, Conditions) :-
     food_name(Food),
     food_meal(Food, MealType),
     suitable_for_diet(Food, Diet),
     safe_for_conditions(Food, Conditions).
 
-meal_items_allowed([], _MealType, _Diet, _Conditions).
-meal_items_allowed([Item|Rest], MealType, Diet, Conditions) :-
-    item_allowed(Item, MealType, Diet, Conditions),
-    meal_items_allowed(Rest, MealType, Diet, Conditions).
+% Pick a base food for a meal.
+pick_base(Food, MealType, Diet, Conditions) :-
+    pick_food(Food, MealType, Diet, Conditions),
+    is_base(Food).
 
-plan_items_allowed(plan(Breakfast, Lunch, Dinner), Diet, Conditions) :-
-    meal_items_allowed(Breakfast, breakfast, Diet, Conditions),
-    meal_items_allowed(Lunch, lunch, Diet, Conditions),
-    meal_items_allowed(Dinner, dinner, Diet, Conditions).
+% Pick a protein food for a meal.
+pick_protein(Food, MealType, Diet, Conditions) :-
+    pick_food(Food, MealType, Diet, Conditions),
+    is_protein_source(Food).
 
-% We removed the strict valid_meal_plan_calories check because it was causing too many failures.
-% The TargetCalories >= MinTarget and =< MaxTarget bounds are enough.
+% Pick a side food for a meal.
+pick_side(Food, MealType, Diet, Conditions) :-
+    pick_food(Food, MealType, Diet, Conditions),
+    is_side(Food).
+
+% Pick a light food for a meal.
+pick_light(Food, MealType, Diet, Conditions) :-
+    pick_food(Food, MealType, Diet, Conditions),
+    is_light(Food).
 
 % ============================================================
-% READY-MADE PLAN TEMPLATES
+% NOTE: Meal assembly is handled by Java (PrologService.java).
+% Java queries pick_base/pick_protein/pick_side/pick_light
+% to get lists of valid foods, then randomly assembles meals
+% and validates calories using plan_total and plan_macro_total.
 % ============================================================
-% plan_template(Name, MinTarget, MaxTarget, DietGroup, Goal, Plan).
-% Goals: diet, normal, bulk
-
-% ----- NORMAL GOAL TEMPLATES -----
-plan_template(standard_2500_omnivore_1, 1500, 3799, omnivore_group, normal,
-    plan(
-        [item(oats, 2), item(banana, 1), item(milk_low_fat, 1), item(egg_boiled, 2)],
-        [item(red_rice, 2), item(chicken_breast, 1), item(parippu_dhal_curry, 1), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1)],
-        [item(string_hoppers, 2), item(ambul_thiyal, 1), item(mung_bean_curry, 1), item(coconut_sambol, 1), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(standard_2500_omnivore_2, 1500, 3799, omnivore_group, normal,
-    plan(
-        [item(cassava_boiled, 2), item(egg_boiled, 2), item(plain_ceylon_tea, 1)],
-        [item(brown_rice_cooked, 2), item(salmon, 1), item(gotu_kola_mallung, 1), item(parippu_dhal_curry, 1)],
-        [item(kurakkan_roti, 2), item(chicken_breast, 1), item(snake_gourd_curry, 1), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(standard_2500_vegetarian_1, 1500, 3799, vegetarian_group, normal,
-    plan(
-        [item(oats, 2), item(banana, 1), item(milk_low_fat, 1), item(egg_boiled, 2)],
-        [item(red_rice, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1), item(buffalo_curd, 1)],
-        [item(kurakkan_roti, 2), item(mung_bean_curry, 2), item(snake_gourd_curry, 1), item(plain_yogurt_low_fat, 1), item(peanuts, 1)]
-    )).
-
-plan_template(standard_2500_vegetarian_2, 1500, 3799, vegetarian_group, normal,
-    plan(
-        [item(string_hoppers, 3), item(parippu_dhal_curry, 1), item(coconut_sambol, 1)],
-        [item(brown_rice_cooked, 2), item(chickpeas_boiled, 2), item(gotu_kola_mallung, 1)],
-        [item(sweet_potato_baked, 2), item(tofu_firm, 1), item(pumpkin_curry, 1), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(standard_2500_vegan_1, 1500, 3799, vegan_group, normal,
-    plan(
-        [item(oats, 2), item(banana, 1), item(almonds, 1), item(kola_kenda, 1)],
-        [item(red_rice, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1), item(avocado, 1)],
-        [item(string_hoppers, 2), item(mung_bean_curry, 2), item(tofu_firm, 1), item(cucumber_raw, 1), item(peanuts, 1)]
-    )).
-
-plan_template(standard_2500_vegan_2, 1500, 3799, vegan_group, normal,
-    plan(
-        [item(cassava_boiled, 2), item(coconut_sambol, 1), item(kola_kenda, 1)],
-        [item(brown_rice_cooked, 2), item(cowpea_curry, 2), item(moringa_mallung, 1)],
-        [item(breadfruit_boiled, 2), item(parippu_dhal_curry, 1), item(tomato_raw, 1)]
-    )).
-
-% ----- DIET GOAL TEMPLATES (Low Carb/Fat, High Veg/Protein) -----
-plan_template(diet_omnivore_1, 0, 3000, omnivore_group, diet,
-    plan(
-        [item(egg_boiled, 3), item(cucumber_raw, 1), item(plain_ceylon_tea, 1)],
-        [item(brown_rice_cooked, 1), item(chicken_breast, 2), item(broccoli_steamed, 2), item(gotu_kola_mallung, 1)],
-        [item(sweet_potato_baked, 1), item(salmon, 1), item(spinach_cooked, 1), item(tomato_raw, 1)]
-    )).
-
-plan_template(diet_omnivore_2, 0, 3000, omnivore_group, diet,
-    plan(
-        [item(oats, 1), item(plain_yogurt_low_fat, 1), item(apple, 1)],
-        [item(quinoa_cooked, 1), item(tuna_canned, 1), item(cucumber_raw, 1), item(tomato_raw, 1)],
-        [item(chicken_breast, 2), item(broccoli_steamed, 2), item(snake_gourd_curry, 1)]
-    )).
-
-plan_template(diet_vegetarian_1, 0, 3000, vegetarian_group, diet,
-    plan(
-        [item(egg_boiled, 3), item(apple, 1), item(plain_ceylon_tea, 1)],
-        [item(quinoa_cooked, 1), item(tofu_firm, 2), item(broccoli_steamed, 2), item(gotu_kola_mallung, 1)],
-        [item(sweet_potato_baked, 1), item(mung_bean_curry, 1), item(spinach_cooked, 1), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(diet_vegan_1, 0, 3000, vegan_group, diet,
-    plan(
-        [item(oats, 1), item(almonds, 1), item(apple, 1), item(kola_kenda, 1)],
-        [item(quinoa_cooked, 1), item(tofu_firm, 2), item(broccoli_steamed, 2)],
-        [item(sweet_potato_baked, 1), item(cowpea_curry, 1), item(spinach_cooked, 1)]
-    )).
-
-% ----- BULK GOAL TEMPLATES (High Calorie/Protein/Carb) -----
-plan_template(bulk_omnivore_1, 3000, 6000, omnivore_group, bulk,
-    plan(
-        [item(oats, 3), item(banana, 2), item(milk_low_fat, 2), item(almonds, 2), item(egg_boiled, 3)],
-        [item(red_rice, 3), item(chicken_breast, 2), item(parippu_dhal_curry, 2), item(avocado, 1), item(buffalo_curd, 1), item(coconut_sambol, 1)],
-        [item(brown_rice_cooked, 3), item(salmon, 2), item(sweet_potato_baked, 2), item(peanuts, 2), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(bulk_omnivore_2, 3000, 6000, omnivore_group, bulk,
-    plan(
-        [item(string_hoppers, 4), item(egg_boiled, 3), item(chicken_breast, 1), item(coconut_sambol, 1)],
-        [item(red_rice, 4), item(tuna_canned, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1)],
-        [item(kurakkan_roti, 4), item(salmon, 2), item(mung_bean_curry, 2), item(peanuts, 2)]
-    )).
-
-plan_template(bulk_vegetarian_1, 3000, 6000, vegetarian_group, bulk,
-    plan(
-        [item(oats, 3), item(banana, 2), item(milk_low_fat, 2), item(almonds, 2), item(egg_boiled, 3)],
-        [item(red_rice, 3), item(parippu_dhal_curry, 3), item(chickpeas_boiled, 2), item(avocado, 1), item(buffalo_curd, 1)],
-        [item(kurakkan_roti, 3), item(mung_bean_curry, 3), item(tofu_firm, 2), item(peanuts, 2), item(plain_yogurt_low_fat, 1)]
-    )).
-
-plan_template(bulk_vegan_1, 3000, 6000, vegan_group, bulk,
-    plan(
-        [item(oats, 4), item(banana, 3), item(almonds, 3), item(kola_kenda, 1), item(peanuts, 1)],
-        [item(red_rice, 4), item(parippu_dhal_curry, 3), item(chickpeas_boiled, 2), item(avocado, 1), item(gotu_kola_mallung, 1)],
-        [item(string_hoppers, 4), item(tofu_firm, 3), item(mung_bean_curry, 2), item(sweet_potato_baked, 2), item(peanuts, 2)]
-    )).
 
 
-% Map user diet to template diet group.
-diet_group(omnivore, omnivore_group).
-diet_group(halal, omnivore_group).
-diet_group(pescatarian, omnivore_group).
-diet_group(diabetic_friendly, omnivore_group).
-diet_group(low_carb, omnivore_group).
-diet_group(high_protein, omnivore_group). % Simplified mapping
-diet_group(vegetarian, vegetarian_group).
-diet_group(vegan, vegan_group).
-diet_group(gluten_free, omnivore_group).
 
-% Main meal plan rule.
-meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories) :-
-    diet_group(Diet, DietGroup),
-    plan_template(_TemplateName, MinTarget, MaxTarget, DietGroup, Goal, Plan),
-    TargetCalories >= MinTarget,
-    TargetCalories =< MaxTarget,
-    plan_items_allowed(Plan, Diet, Conditions),
-    plan_total(Plan, TotalCalories).
-
-% Backup rule:
-% Try with exact Goal and Diet
-backup_meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories).
-
-% Fallback 1: Exact Diet, Normal Goal
-backup_meal_plan(TargetCalories, Diet, Conditions, _Goal, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, Diet, Conditions, normal, Plan, TotalCalories).
-
-% Fallback 2: Vegetarian, original Goal
-backup_meal_plan(TargetCalories, _Diet, Conditions, Goal, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, vegetarian, Conditions, Goal, Plan, TotalCalories).
-
-% Fallback 3: Vegan, original Goal
-backup_meal_plan(TargetCalories, _Diet, Conditions, Goal, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, vegan, Conditions, Goal, Plan, TotalCalories).
-
-% Fallback 4: Omnivore, Normal Goal
-backup_meal_plan(TargetCalories, _Diet, Conditions, _Goal, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, omnivore, Conditions, normal, Plan, TotalCalories).
-
+% ============================================================
+% UTILITY PREDICATES
+% ============================================================
 
 % Check the amount of one selected food item.
 % Example:
@@ -584,7 +393,7 @@ print_plan(plan(Breakfast, Lunch, Dinner)) :-
     write('TOTAL = '), write(Total), write(' kcal'), nl.
 
 suggest(TargetCalories, Diet, Conditions) :-
-    meal_plan(TargetCalories, Diet, Conditions, Plan, TotalCalories),
+    meal_plan(TargetCalories, Diet, Conditions, normal, Plan, TotalCalories),
     print_plan(Plan),
     plan_macro_total(Plan, Carbs, Protein, Fat),
     nl,
