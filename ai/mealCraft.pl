@@ -83,20 +83,13 @@ food_fat(Food, Fat) :-
 food_serving_size(Food, ServingSize) :-
     food(Food, _, _, ServingSize, _, _, _, _, _, _, _, _, _).
 
-item_grams(item(Food, Quantity), TotalGramsOrMl) :-
-    food_serving_size(Food, ServingSize),
-    TotalGramsOrMl is ServingSize * Quantity.
-
 food_meal(Food, MealType) :-
     food(Food, _, _, _, _, _, _, _, _, _, _, MealTags, _), member(MealType, MealTags).
 
 has_tag(Food, Tag) :-
     food(Food, _, _, _, _, _, _, _, _, _, _, _, DietaryTags), member(Tag, DietaryTags).
 
-has_all_tags(_, []).
-has_all_tags(Food, [Tag|Rest]) :-
-    has_tag(Food, Tag),
-    has_all_tags(Food, Rest).
+
 
 % ============================================================
 % DIETARY PREFERENCES
