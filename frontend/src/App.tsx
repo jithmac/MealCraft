@@ -17,6 +17,7 @@ export interface UserPreferences {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active'
   diet: string
   healthConditions: string[]
+  goal: 'normal' | 'diet' | 'bulk'
 }
 
 export interface FoodItem {
@@ -54,6 +55,7 @@ const defaultPreferences: UserPreferences = {
   activityLevel: 'moderate',
   diet: 'omnivore',
   healthConditions: [],
+  goal: 'normal',
 }
 
 const sampleMealPlan: MealPlan = {
@@ -126,6 +128,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
           budget: 0, // Ignored by backend
           diet: preferences.diet,
           healthConditions: preferences.healthConditions,
+          goal: preferences.goal,
         }),
       })
 
@@ -315,9 +318,21 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
       {/* Meal Plan Popup */}
       <Dialog open={showMealPopup} onOpenChange={setShowMealPopup}>
         <DialogContent className="w-[95vw] !max-w-7xl h-[90vh] sm:h-[85vh] p-0 border-border/50 bg-card/95 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col shadow-2xl">
-          <DialogHeader className="p-6 pb-4 border-b border-border/30 bg-background/50">
-            <DialogTitle className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">Personalized for your goals</DialogDescription>
+          <DialogHeader className="p-6 pb-4 border-b border-border/30 bg-background/50 flex flex-row items-center justify-between">
+            <div>
+              <DialogTitle className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">Personalized for your goals</DialogDescription>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-secondary/80 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              {isGenerating ? 'Regenerating...' : 'Regenerate'}
+            </motion.button>
           </DialogHeader>
           <div className="flex-1 overflow-hidden p-6 bg-background/20">
             <MealStage

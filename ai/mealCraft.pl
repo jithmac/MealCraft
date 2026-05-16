@@ -395,61 +395,110 @@ plan_items_allowed(plan(Breakfast, Lunch, Dinner), Diet, Conditions) :-
 % ============================================================
 % READY-MADE PLAN TEMPLATES
 % ============================================================
-% plan_template(Name, MinTarget, MaxTarget, DietGroup, Plan).
-% Calorie levels included:
-%   low_1800 templates      = 1500 to 2100 kcal
-%   standard_2500 templates = 2200 to 2800 kcal
-%   high_4000 templates     = 3800 to 4600 kcal
-% DietGroup can be omnivore_group, vegetarian_group, vegan_group, high_protein_group.
+% plan_template(Name, MinTarget, MaxTarget, DietGroup, Goal, Plan).
+% Goals: diet, normal, bulk
 
-plan_template(standard_2500_omnivore, 1500, 3799, omnivore_group,
+% ----- NORMAL GOAL TEMPLATES -----
+plan_template(standard_2500_omnivore_1, 1500, 3799, omnivore_group, normal,
     plan(
         [item(oats, 2), item(banana, 1), item(milk_low_fat, 1), item(egg_boiled, 2)],
         [item(red_rice, 2), item(chicken_breast, 1), item(parippu_dhal_curry, 1), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1)],
         [item(string_hoppers, 2), item(ambul_thiyal, 1), item(mung_bean_curry, 1), item(coconut_sambol, 1), item(plain_yogurt_low_fat, 1)]
     )).
 
-plan_template(standard_2500_vegetarian, 1500, 3799, vegetarian_group,
+plan_template(standard_2500_omnivore_2, 1500, 3799, omnivore_group, normal,
+    plan(
+        [item(cassava_boiled, 2), item(egg_boiled, 2), item(plain_ceylon_tea, 1)],
+        [item(brown_rice_cooked, 2), item(salmon, 1), item(gotu_kola_mallung, 1), item(parippu_dhal_curry, 1)],
+        [item(kurakkan_roti, 2), item(chicken_breast, 1), item(snake_gourd_curry, 1), item(plain_yogurt_low_fat, 1)]
+    )).
+
+plan_template(standard_2500_vegetarian_1, 1500, 3799, vegetarian_group, normal,
     plan(
         [item(oats, 2), item(banana, 1), item(milk_low_fat, 1), item(egg_boiled, 2)],
         [item(red_rice, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1), item(buffalo_curd, 1)],
         [item(kurakkan_roti, 2), item(mung_bean_curry, 2), item(snake_gourd_curry, 1), item(plain_yogurt_low_fat, 1), item(peanuts, 1)]
     )).
 
-plan_template(standard_2500_vegan, 1500, 3799, vegan_group,
+plan_template(standard_2500_vegetarian_2, 1500, 3799, vegetarian_group, normal,
+    plan(
+        [item(string_hoppers, 3), item(parippu_dhal_curry, 1), item(coconut_sambol, 1)],
+        [item(brown_rice_cooked, 2), item(chickpeas_boiled, 2), item(gotu_kola_mallung, 1)],
+        [item(sweet_potato_baked, 2), item(tofu_firm, 1), item(pumpkin_curry, 1), item(plain_yogurt_low_fat, 1)]
+    )).
+
+plan_template(standard_2500_vegan_1, 1500, 3799, vegan_group, normal,
     plan(
         [item(oats, 2), item(banana, 1), item(almonds, 1), item(kola_kenda, 1)],
         [item(red_rice, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1), item(pumpkin_curry, 1), item(avocado, 1)],
         [item(string_hoppers, 2), item(mung_bean_curry, 2), item(tofu_firm, 1), item(cucumber_raw, 1), item(peanuts, 1)]
     )).
 
-plan_template(high_4000_omnivore, 3800, 4500, omnivore_group,
+plan_template(standard_2500_vegan_2, 1500, 3799, vegan_group, normal,
+    plan(
+        [item(cassava_boiled, 2), item(coconut_sambol, 1), item(kola_kenda, 1)],
+        [item(brown_rice_cooked, 2), item(cowpea_curry, 2), item(moringa_mallung, 1)],
+        [item(breadfruit_boiled, 2), item(parippu_dhal_curry, 1), item(tomato_raw, 1)]
+    )).
+
+% ----- DIET GOAL TEMPLATES (Low Carb/Fat, High Veg/Protein) -----
+plan_template(diet_omnivore_1, 0, 3000, omnivore_group, diet,
+    plan(
+        [item(egg_boiled, 3), item(cucumber_raw, 1), item(plain_ceylon_tea, 1)],
+        [item(brown_rice_cooked, 1), item(chicken_breast, 2), item(broccoli_steamed, 2), item(gotu_kola_mallung, 1)],
+        [item(sweet_potato_baked, 1), item(salmon, 1), item(spinach_cooked, 1), item(tomato_raw, 1)]
+    )).
+
+plan_template(diet_omnivore_2, 0, 3000, omnivore_group, diet,
+    plan(
+        [item(oats, 1), item(plain_yogurt_low_fat, 1), item(apple, 1)],
+        [item(quinoa_cooked, 1), item(tuna_canned, 1), item(cucumber_raw, 1), item(tomato_raw, 1)],
+        [item(chicken_breast, 2), item(broccoli_steamed, 2), item(snake_gourd_curry, 1)]
+    )).
+
+plan_template(diet_vegetarian_1, 0, 3000, vegetarian_group, diet,
+    plan(
+        [item(egg_boiled, 3), item(apple, 1), item(plain_ceylon_tea, 1)],
+        [item(quinoa_cooked, 1), item(tofu_firm, 2), item(broccoli_steamed, 2), item(gotu_kola_mallung, 1)],
+        [item(sweet_potato_baked, 1), item(mung_bean_curry, 1), item(spinach_cooked, 1), item(plain_yogurt_low_fat, 1)]
+    )).
+
+plan_template(diet_vegan_1, 0, 3000, vegan_group, diet,
+    plan(
+        [item(oats, 1), item(almonds, 1), item(apple, 1), item(kola_kenda, 1)],
+        [item(quinoa_cooked, 1), item(tofu_firm, 2), item(broccoli_steamed, 2)],
+        [item(sweet_potato_baked, 1), item(cowpea_curry, 1), item(spinach_cooked, 1)]
+    )).
+
+% ----- BULK GOAL TEMPLATES (High Calorie/Protein/Carb) -----
+plan_template(bulk_omnivore_1, 3000, 6000, omnivore_group, bulk,
     plan(
         [item(oats, 3), item(banana, 2), item(milk_low_fat, 2), item(almonds, 2), item(egg_boiled, 3)],
         [item(red_rice, 3), item(chicken_breast, 2), item(parippu_dhal_curry, 2), item(avocado, 1), item(buffalo_curd, 1), item(coconut_sambol, 1)],
         [item(brown_rice_cooked, 3), item(salmon, 2), item(sweet_potato_baked, 2), item(peanuts, 2), item(plain_yogurt_low_fat, 1)]
     )).
 
-plan_template(high_4000_high_protein, 3800, 4600, high_protein_group,
+plan_template(bulk_omnivore_2, 3000, 6000, omnivore_group, bulk,
     plan(
-        [item(oats, 3), item(egg_boiled, 4), item(milk_low_fat, 2), item(plain_yogurt_low_fat, 1), item(banana, 2)],
-        [item(red_rice, 3), item(chicken_breast, 3), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1), item(avocado, 1)],
-        [item(brown_rice_cooked, 3), item(salmon, 2), item(tofu_firm, 1), item(sweet_potato_baked, 2), item(peanuts, 2)]
+        [item(string_hoppers, 4), item(egg_boiled, 3), item(chicken_breast, 1), item(coconut_sambol, 1)],
+        [item(red_rice, 4), item(tuna_canned, 2), item(parippu_dhal_curry, 2), item(gotu_kola_mallung, 1)],
+        [item(kurakkan_roti, 4), item(salmon, 2), item(mung_bean_curry, 2), item(peanuts, 2)]
     )).
 
-plan_template(high_4000_vegetarian, 3800, 4500, vegetarian_group,
+plan_template(bulk_vegetarian_1, 3000, 6000, vegetarian_group, bulk,
     plan(
         [item(oats, 3), item(banana, 2), item(milk_low_fat, 2), item(almonds, 2), item(egg_boiled, 3)],
         [item(red_rice, 3), item(parippu_dhal_curry, 3), item(chickpeas_boiled, 2), item(avocado, 1), item(buffalo_curd, 1)],
         [item(kurakkan_roti, 3), item(mung_bean_curry, 3), item(tofu_firm, 2), item(peanuts, 2), item(plain_yogurt_low_fat, 1)]
     )).
 
-plan_template(high_4000_vegan, 3800, 4500, vegan_group,
+plan_template(bulk_vegan_1, 3000, 6000, vegan_group, bulk,
     plan(
         [item(oats, 4), item(banana, 3), item(almonds, 3), item(kola_kenda, 1), item(peanuts, 1)],
         [item(red_rice, 4), item(parippu_dhal_curry, 3), item(chickpeas_boiled, 2), item(avocado, 1), item(gotu_kola_mallung, 1)],
         [item(string_hoppers, 4), item(tofu_firm, 3), item(mung_bean_curry, 2), item(sweet_potato_baked, 2), item(peanuts, 2)]
     )).
+
 
 % Map user diet to template diet group.
 diet_group(omnivore, omnivore_group).
@@ -457,31 +506,40 @@ diet_group(halal, omnivore_group).
 diet_group(pescatarian, omnivore_group).
 diet_group(diabetic_friendly, omnivore_group).
 diet_group(low_carb, omnivore_group).
-diet_group(high_protein, high_protein_group).
+diet_group(high_protein, omnivore_group). % Simplified mapping
 diet_group(vegetarian, vegetarian_group).
 diet_group(vegan, vegan_group).
 diet_group(gluten_free, omnivore_group).
 
 % Main meal plan rule.
-meal_plan(TargetCalories, Diet, Conditions, Plan, TotalCalories) :-
+meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories) :-
     diet_group(Diet, DietGroup),
-    plan_template(_TemplateName, MinTarget, MaxTarget, DietGroup, Plan),
+    plan_template(_TemplateName, MinTarget, MaxTarget, DietGroup, Goal, Plan),
     TargetCalories >= MinTarget,
     TargetCalories =< MaxTarget,
     plan_items_allowed(Plan, Diet, Conditions),
     plan_total(Plan, TotalCalories).
 
 % Backup rule:
-% If the selected diet is strict and no exact template passes the health filters,
-% show a safe vegetarian/vegan plan if possible.
-backup_meal_plan(TargetCalories, Diet, Conditions, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, Diet, Conditions, Plan, TotalCalories), !.
-backup_meal_plan(TargetCalories, _Diet, Conditions, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, vegan, Conditions, Plan, TotalCalories), !.
-backup_meal_plan(TargetCalories, _Diet, Conditions, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, vegetarian, Conditions, Plan, TotalCalories), !.
-backup_meal_plan(TargetCalories, _Diet, Conditions, Plan, TotalCalories) :-
-    meal_plan(TargetCalories, omnivore, Conditions, Plan, TotalCalories).
+% Try with exact Goal and Diet
+backup_meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories) :-
+    meal_plan(TargetCalories, Diet, Conditions, Goal, Plan, TotalCalories).
+
+% Fallback 1: Exact Diet, Normal Goal
+backup_meal_plan(TargetCalories, Diet, Conditions, _Goal, Plan, TotalCalories) :-
+    meal_plan(TargetCalories, Diet, Conditions, normal, Plan, TotalCalories).
+
+% Fallback 2: Vegetarian, original Goal
+backup_meal_plan(TargetCalories, _Diet, Conditions, Goal, Plan, TotalCalories) :-
+    meal_plan(TargetCalories, vegetarian, Conditions, Goal, Plan, TotalCalories).
+
+% Fallback 3: Vegan, original Goal
+backup_meal_plan(TargetCalories, _Diet, Conditions, Goal, Plan, TotalCalories) :-
+    meal_plan(TargetCalories, vegan, Conditions, Goal, Plan, TotalCalories).
+
+% Fallback 4: Omnivore, Normal Goal
+backup_meal_plan(TargetCalories, _Diet, Conditions, _Goal, Plan, TotalCalories) :-
+    meal_plan(TargetCalories, omnivore, Conditions, normal, Plan, TotalCalories).
 
 
 % Check the amount of one selected food item.

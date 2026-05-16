@@ -33,7 +33,7 @@ public class PrologService {
     public void init() {
     }
 
-    public MealPlanResponseDto generateMealPlan(UserPreferencesDto prefs) {
+    public synchronized MealPlanResponseDto generateMealPlan(UserPreferencesDto prefs) {
         int tdee = calculateTDEE(prefs);
         if (tdee < 1500) {
             throw new UnsafeCalorieException("Calculated calories are below 1500 kcal (" + tdee + " kcal). Please consult a doctor.");
@@ -47,7 +47,14 @@ public class PrologService {
         List<String> conditions = prefs.getHealthConditions() != null ? prefs.getHealthConditions() : new ArrayList<>();
         String conditionsStr = "[" + String.join(",", conditions) + "]";
 
-        String query = String.format("backup_meal_plan(%d, %s, %s, Plan, TotalCals).", tdee, diet, conditionsStr);
+        String goal = prefs.getGoal() != null && !prefs.getGoal().isEmpty() ? prefs.getGoal().toLowerCase() : "normal";
+        if ("diet".equals(goal)) {
+            tdee -= 300;
+        } else if ("bulk".equals(goal)) {
+            tdee += 300;
+        }
+
+        String query = String.format("backup_meal_plan(%d, %s, %s, %s, Plan, TotalCals).", tdee, diet, conditionsStr, goal);
 
         Prolog engine = new Prolog();
         try {
