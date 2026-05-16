@@ -112,7 +112,6 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true)
-    setShowMealPopup(true)
     setError(null)
 
     try {
@@ -151,10 +150,12 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
       })
 
       setHasGenerated(true)
+      setShowMealPopup(true)
       setHealthScore(Math.min(100, healthScore + Math.floor(Math.random() * 10)))
     } catch (err: any) {
       console.error('Meal plan generation failed:', err)
       setError(err.message || 'Failed to generate meal plan. Is the backend running?')
+      setShowMealPopup(false)
     } finally {
       setIsGenerating(false)
     }
