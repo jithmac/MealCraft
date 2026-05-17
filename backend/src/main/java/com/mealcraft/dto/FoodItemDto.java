@@ -5,6 +5,7 @@ public class FoodItemDto {
     private int quantity;
     private int amount; // in grams or ml
     private int calories;
+    private double costLkr;
 
     public FoodItemDto() {}
 
@@ -13,6 +14,14 @@ public class FoodItemDto {
         this.quantity = quantity;
         this.amount = amount;
         this.calories = calories;
+    }
+
+    public FoodItemDto(String name, int quantity, int amount, int calories, double costLkr) {
+        this.name = name;
+        this.quantity = quantity;
+        this.amount = amount;
+        this.calories = calories;
+        this.costLkr = costLkr;
     }
 
     public String getName() { return name; }
@@ -26,4 +35,7 @@ public class FoodItemDto {
 
     public int getCalories() { return calories; }
     public void setCalories(int calories) { this.calories = calories; }
+
+    public double getCostLkr() { return costLkr; }
+    public void setCostLkr(double costLkr) { this.costLkr = costLkr; }
 }

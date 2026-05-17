@@ -11,6 +11,7 @@ public class UserPreferencesDto {
     private int budget;
     private String diet;
     private List<String> healthConditions;
+    private String goal;
 
     // Getters and Setters
     public int getAge() { return age; }
@@ -36,4 +37,7 @@ public class UserPreferencesDto {
 
     public List<String> getHealthConditions() { return healthConditions; }
     public void setHealthConditions(List<String> healthConditions) { this.healthConditions = healthConditions; }
+
+    public String getGoal() { return goal; }
+    public void setGoal(String goal) { this.goal = goal; }
 }

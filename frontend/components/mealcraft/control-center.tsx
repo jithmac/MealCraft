@@ -22,6 +22,7 @@ interface UserPreferences {
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very-active'
   diet: string
   healthConditions: string[]
+  goal: 'normal' | 'diet' | 'bulk'
 }
 
 interface ControlCenterProps {
@@ -226,6 +227,27 @@ export function ControlCenter({
               ].map((d) => (
                 <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Goal */}
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Flame className="w-3 h-3 text-primary" />
+            Your Goal
+          </h3>
+          <Select 
+            value={preferences.goal || 'normal'} 
+            onValueChange={(v) => updatePreferences({ goal: v as UserPreferences['goal'] })}
+          >
+            <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="normal">Normal (Maintain Weight)</SelectItem>
+              <SelectItem value="diet">Diet (Cut / Lose Weight)</SelectItem>
+              <SelectItem value="bulk">Bulk (Build Muscle / Gain Weight)</SelectItem>
             </SelectContent>
           </Select>
         </div>
