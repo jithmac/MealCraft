@@ -104,7 +104,7 @@ export function QuickOrder({ selectedMeal, budget, onOrderSuccess }: QuickOrderP
           <ShoppingCart className="w-5 h-5 text-primary" />
           {selectedMeal ? `${selectedMeal.type} Order` : 'Quick Order'}
         </h3>
-        <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
+        <span className="text-sm px-3 py-1 rounded-full bg-primary/10 text-primary font-medium">
           {cart.length} items
         </span>
       </div>
@@ -122,24 +122,24 @@ export function QuickOrder({ selectedMeal, budget, onOrderSuccess }: QuickOrderP
               className="flex items-center gap-2 p-2 rounded-xl bg-card/40 hover:bg-card/60 transition-colors"
             >
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">{item.name}</p>
-                <p className="text-xs text-muted-foreground">Rs. {item.price.toFixed(2)}</p>
+                <p className="text-sm font-medium text-foreground truncate">{item.name}</p>
+                <p className="text-sm text-muted-foreground">Rs. {item.price.toFixed(2)}</p>
               </div>
               <div className="flex items-center gap-1">
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => updateQuantity(item.id, -1)}
-                  className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
                 >
-                  <Minus className="w-3 h-3" />
+                  <Minus className="w-4 h-4" />
                 </motion.button>
-                <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                <span className="w-6 text-center text-base font-medium">{item.quantity}</span>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
                   onClick={() => updateQuantity(item.id, 1)}
-                  className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors"
+                  className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/30 transition-colors"
                 >
-                  <Plus className="w-3 h-3" />
+                  <Plus className="w-4 h-4" />
                 </motion.button>
               </div>
             </motion.div>
@@ -155,12 +155,12 @@ export function QuickOrder({ selectedMeal, budget, onOrderSuccess }: QuickOrderP
             {successMessage ? (
               <>
                 <Sparkles className="w-8 h-8 mb-2 text-primary" />
-                <p className="text-sm font-medium text-primary">{successMessage}</p>
+                <p className="text-base font-medium text-primary">{successMessage}</p>
               </>
             ) : (
               <>
                 <ShoppingCart className="w-8 h-8 mb-2 opacity-50" />
-                <p className="text-sm">Select a meal from Today's Menu to order</p>
+                <p className="text-base">Select a meal from Today's Menu to order</p>
               </>
             )}
           </motion.div>
@@ -170,7 +170,7 @@ export function QuickOrder({ selectedMeal, budget, onOrderSuccess }: QuickOrderP
       {/* Total & Checkout */}
       <div className="pt-3 mt-2 border-t border-border/30 space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Total</span>
+          <span className="text-base text-muted-foreground">Total</span>
           <motion.span 
             key={total}
             initial={{ scale: 1.2 }}
@@ -182,7 +182,7 @@ export function QuickOrder({ selectedMeal, budget, onOrderSuccess }: QuickOrderP
         </div>
         
         {isOverBudget && total > 0 && (
-          <p className="text-xs text-destructive text-center">Over weekly budget!</p>
+          <p className="text-sm text-destructive text-center font-medium">Over weekly budget!</p>
         )}
         
         <Button

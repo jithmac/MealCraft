@@ -62,8 +62,8 @@ export function MoodTracker({ healthScore }: MoodTrackerProps) {
       {/* Health Score */}
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">Health Score</span>
-          <span className="text-lg font-bold font-fredoka text-foreground">{healthScore}</span>
+          <span className="text-sm text-muted-foreground">Health Score</span>
+          <span className="text-xl font-bold font-fredoka text-foreground">{healthScore}</span>
         </div>
         
         {/* Progress bar */}
@@ -82,7 +82,7 @@ export function MoodTracker({ healthScore }: MoodTrackerProps) {
           />
         </div>
         
-        <p className="text-sm text-center text-muted-foreground font-medium">
+        <p className="text-base text-center text-muted-foreground font-medium pt-1">
           {getMoodText()}
         </p>
       </div>

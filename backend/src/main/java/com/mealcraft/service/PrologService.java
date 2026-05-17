@@ -52,6 +52,10 @@ public class PrologService {
             tdee += 300;
         }
 
+        // Cap TDEE for practical meal generation — the food database
+        // can't realistically produce plans above ~4000 kcal
+        tdee = Math.min(tdee, 4000);
+
         Prolog engine = new Prolog();
         try {
             File prologFile = new File("../ai/mealCraft.pl");
@@ -83,19 +87,44 @@ public class PrologService {
 
             // =============================================================
             // PHASE 1: Use Prolog to collect all valid foods per role & meal
+            // with progressive fallback when pools are empty
             // =============================================================
-            List<String> bfBases    = collectFoods(engine, String.format("pick_base(F, breakfast, %s, %s).", diet, conditionsStr));
-            List<String> bfProteins = collectFoods(engine, String.format("pick_protein(F, breakfast, %s, %s).", diet, conditionsStr));
-            List<String> bfLights   = collectFoods(engine, String.format("pick_light(F, breakfast, %s, %s).", diet, conditionsStr));
+            String[][] fallbackConfigs = {
+                { diet, conditionsStr },                     // Try 1: exact diet + conditions
+                { diet, "[]" },                              // Try 2: diet only, drop conditions
+                { "omnivore", conditionsStr },                // Try 3: omnivore + conditions
+                { "omnivore", "[]" }                          // Try 4: omnivore, no conditions
+            };
 
-            List<String> luBases    = collectFoods(engine, String.format("pick_base(F, lunch, %s, %s).", diet, conditionsStr));
-            List<String> luProteins = collectFoods(engine, String.format("pick_protein(F, lunch, %s, %s).", diet, conditionsStr));
-            List<String> luSides    = collectFoods(engine, String.format("pick_side(F, lunch, %s, %s).", diet, conditionsStr));
+            List<String> bfBases = null, bfProteins = null, bfLights = null;
+            List<String> luBases = null, luProteins = null, luSides = null;
+            List<String> dnBases = null, dnProteins = null, dnSides = null, dnLights = null;
 
-            List<String> dnBases    = collectFoods(engine, String.format("pick_base(F, dinner, %s, %s).", diet, conditionsStr));
-            List<String> dnProteins = collectFoods(engine, String.format("pick_protein(F, dinner, %s, %s).", diet, conditionsStr));
-            List<String> dnSides    = collectFoods(engine, String.format("pick_side(F, dinner, %s, %s).", diet, conditionsStr));
-            List<String> dnLights   = collectFoods(engine, String.format("pick_light(F, dinner, %s, %s).", diet, conditionsStr));
+            for (String[] cfg : fallbackConfigs) {
+                String d = cfg[0], c = cfg[1];
+
+                bfBases    = collectFoods(engine, String.format("pick_base(F, breakfast, %s, %s).", d, c));
+                bfProteins = collectFoods(engine, String.format("pick_protein(F, breakfast, %s, %s).", d, c));
+                bfLights   = collectFoods(engine, String.format("pick_light(F, breakfast, %s, %s).", d, c));
+
+                luBases    = collectFoods(engine, String.format("pick_base(F, lunch, %s, %s).", d, c));
+                luProteins = collectFoods(engine, String.format("pick_protein(F, lunch, %s, %s).", d, c));
+                luSides    = collectFoods(engine, String.format("pick_side(F, lunch, %s, %s).", d, c));
+
+                dnBases    = collectFoods(engine, String.format("pick_base(F, dinner, %s, %s).", d, c));
+                dnProteins = collectFoods(engine, String.format("pick_protein(F, dinner, %s, %s).", d, c));
+                dnSides    = collectFoods(engine, String.format("pick_side(F, dinner, %s, %s).", d, c));
+                dnLights   = collectFoods(engine, String.format("pick_light(F, dinner, %s, %s).", d, c));
+
+                // Check all pools have at least 1 food
+                boolean allPopulated = !bfBases.isEmpty() && !bfProteins.isEmpty() && !bfLights.isEmpty()
+                        && !luBases.isEmpty() && !luProteins.isEmpty() && !luSides.isEmpty()
+                        && !dnBases.isEmpty() && !dnProteins.isEmpty() && !dnSides.isEmpty() && !dnLights.isEmpty();
+
+
+                if (allPopulated) break;
+            }
+
 
             // =============================================================
             // PHASE 2: Determine serving sizes based on goal + TDEE
@@ -106,8 +135,8 @@ public class PrologService {
             double scaleFactor = tdee / 2200.0; // 2200 is the baseline
             int baseQty    = Math.max(1, (int) Math.round(2 * scaleFactor));
             int proteinQty = Math.max(1, (int) Math.round(1.5 * scaleFactor));
-            int sideQty    = 1;
-            int lightQty   = 1;
+            int sideQty    = Math.max(1, (int) Math.round(1 * scaleFactor));
+            int lightQty   = Math.max(1, (int) Math.round(1 * scaleFactor));
 
             if ("diet".equals(goal)) {
                 baseQty = Math.max(1, baseQty - 1);
@@ -115,7 +144,7 @@ public class PrologService {
             } else if ("bulk".equals(goal)) {
                 baseQty = baseQty + 1;
                 proteinQty = proteinQty + 1;
-                lightQty = 2;
+                lightQty = lightQty + 1;
             }
 
 
@@ -123,16 +152,19 @@ public class PrologService {
             // PHASE 3: Java-side random assembly + Prolog calorie validation
             // =============================================================
             Random rng = new Random();
-            int tolerance = tdee >= 3800 ? 500 : 400;
+            int tolerance = tdee >= 3500 ? 700 : 500;
+
 
             for (int attempt = 0; attempt < 500; attempt++) {
                 // Vary quantities per attempt to explore calorie space
-                int bqAdj = rng.nextInt(3) - 1; // -1, 0, or +1
-                int pqAdj = rng.nextInt(3) - 1;
+                int bqAdj = rng.nextInt(5) - 1; // -1 to +3
+                int pqAdj = rng.nextInt(3) - 1; // -1 to +1
+                int sqAdj = rng.nextInt(3) - 1; // -1 to +1
+                int lqAdj = rng.nextInt(2);      // 0 or +1
                 int curBaseQty    = Math.max(1, baseQty + bqAdj);
                 int curProteinQty = Math.max(1, proteinQty + pqAdj);
-                int curLightQty   = lightQty;
-                int curSideQty    = sideQty;
+                int curSideQty    = Math.max(1, sideQty + sqAdj);
+                int curLightQty   = Math.max(1, lightQty + lqAdj);
 
                 // Shuffle all lists for randomness
                 Collections.shuffle(bfBases, rng);
@@ -146,52 +178,54 @@ public class PrologService {
                 Collections.shuffle(dnSides, rng);
                 Collections.shuffle(dnLights, rng);
 
-                Set<String> usedFoods = new HashSet<>();
+                Set<String> usedBreakfast = new HashSet<>();
 
                 // ---- BREAKFAST: 1 base + 1 protein + 1 light ----
-                String bBase = pickUnique(bfBases, usedFoods);
+                String bBase = pickUnique(bfBases, usedBreakfast);
                 if (bBase == null) continue;
-                usedFoods.add(bBase);
+                usedBreakfast.add(bBase);
 
-                String bProtein = pickUnique(bfProteins, usedFoods);
+                String bProtein = pickUnique(bfProteins, usedBreakfast);
                 if (bProtein == null) continue;
-                usedFoods.add(bProtein);
+                usedBreakfast.add(bProtein);
 
-                String bLight = pickUnique(bfLights, usedFoods);
+                String bLight = pickUnique(bfLights, usedBreakfast);
                 if (bLight == null) continue;
-                usedFoods.add(bLight);
+
+                Set<String> usedLunch = new HashSet<>();
 
                 // ---- LUNCH: 1 base + 1 protein + 2 sides ----
-                String lBase = pickUnique(luBases, usedFoods);
+                String lBase = pickUnique(luBases, usedLunch);
                 if (lBase == null) continue;
-                usedFoods.add(lBase);
+                usedLunch.add(lBase);
 
-                String lProtein = pickUnique(luProteins, usedFoods);
+                String lProtein = pickUnique(luProteins, usedLunch);
                 if (lProtein == null) continue;
-                usedFoods.add(lProtein);
+                usedLunch.add(lProtein);
 
-                String lSide1 = pickUnique(luSides, usedFoods);
+                String lSide1 = pickUnique(luSides, usedLunch);
                 if (lSide1 == null) continue;
-                usedFoods.add(lSide1);
+                usedLunch.add(lSide1);
 
-                String lSide2 = pickUnique(luSides, usedFoods);
+                String lSide2 = pickUnique(luSides, usedLunch);
                 if (lSide2 == null) continue;
-                usedFoods.add(lSide2);
+
+                Set<String> usedDinner = new HashSet<>();
 
                 // ---- DINNER: 1 base + 1 protein + 1 side + 1 light ----
-                String dBase = pickUnique(dnBases, usedFoods);
+                String dBase = pickUnique(dnBases, usedDinner);
                 if (dBase == null) continue;
-                usedFoods.add(dBase);
+                usedDinner.add(dBase);
 
-                String dProtein = pickUnique(dnProteins, usedFoods);
+                String dProtein = pickUnique(dnProteins, usedDinner);
                 if (dProtein == null) continue;
-                usedFoods.add(dProtein);
+                usedDinner.add(dProtein);
 
-                String dSide = pickUnique(dnSides, usedFoods);
+                String dSide = pickUnique(dnSides, usedDinner);
                 if (dSide == null) continue;
-                usedFoods.add(dSide);
+                usedDinner.add(dSide);
 
-                String dLight = pickUnique(dnLights, usedFoods);
+                String dLight = pickUnique(dnLights, usedDinner);
                 if (dLight == null) continue;
 
                 // Build Prolog plan term strings

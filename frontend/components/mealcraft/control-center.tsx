@@ -77,7 +77,7 @@ export function ControlCenter({
           <Calculator className="w-8 h-8 text-primary" />
         </div>
         <h3 className="font-fredoka text-xl font-semibold mb-2">Preferences Set</h3>
-        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+        <p className="text-base text-muted-foreground mb-6 leading-relaxed">
           Daily Goal: <span className="font-bold text-foreground">{recommendedCalories} kcal</span><br/>
           Diet: <span className="font-bold text-foreground">{preferences.diet.replace('_', ' ')}</span>
         </p>
@@ -101,7 +101,7 @@ export function ControlCenter({
           <Calculator className="w-5 h-5 text-primary" />
           Control Center
         </h2>
-        <p className="text-sm text-muted-foreground mt-1 font-medium">
+        <p className="text-base text-muted-foreground mt-1 font-medium">
           Enter your details below to generate a personalized meal plan.
         </p>
       </div>
@@ -109,26 +109,26 @@ export function ControlCenter({
       <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
         {/* Personal Info Section */}
         <div className="space-y-3">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <User className="w-3 h-3" />
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <User className="w-4 h-4" />
             Personal Info
           </h3>
           
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label htmlFor="age" className="text-xs">Age</Label>
+              <Label htmlFor="age" className="text-sm">Age</Label>
               <Input
                 id="age"
                 type="number"
                 value={preferences.age}
                 onChange={(e) => updatePreferences({ age: parseInt(e.target.value) || 0 })}
-                className="h-8 bg-card/50 border-border/50 rounded-xl text-sm"
+                className="h-10 bg-card/50 border-border/50 rounded-xl text-base"
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="gender" className="text-xs">Gender</Label>
+              <Label htmlFor="gender" className="text-sm">Gender</Label>
               <Select value={preferences.gender} onValueChange={(v) => updatePreferences({ gender: v as "male" | "female" })}>
-                <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+                <SelectTrigger className="h-10 bg-card/50 border-border/50 rounded-xl text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -141,7 +141,7 @@ export function ControlCenter({
 
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1">
-              <Label htmlFor="weight" className="text-xs flex items-center gap-1">
+              <Label htmlFor="weight" className="text-sm flex items-center gap-1">
                 Weight <span className="text-muted-foreground">(kg)</span>
               </Label>
               <Input
@@ -149,12 +149,12 @@ export function ControlCenter({
                 type="number"
                 value={preferences.weight}
                 onChange={(e) => updatePreferences({ weight: parseInt(e.target.value) || 0 })}
-                className="h-8 bg-card/50 border-border/50 rounded-xl text-sm"
+                className="h-10 bg-card/50 border-border/50 rounded-xl text-base"
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="height" className="text-xs flex items-center gap-1">
-                <Ruler className="w-3 h-3" />
+              <Label htmlFor="height" className="text-sm flex items-center gap-1">
+                <Ruler className="w-4 h-4" />
                 Height <span className="text-muted-foreground">(cm)</span>
               </Label>
               <Input
@@ -162,21 +162,21 @@ export function ControlCenter({
                 type="number"
                 value={preferences.height}
                 onChange={(e) => updatePreferences({ height: parseInt(e.target.value) || 0 })}
-                className="h-8 bg-card/50 border-border/50 rounded-xl text-sm"
+                className="h-10 bg-card/50 border-border/50 rounded-xl text-base"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs flex items-center gap-1">
-              <Activity className="w-3 h-3" />
+            <Label className="text-sm flex items-center gap-1">
+              <Activity className="w-4 h-4" />
               Activity Level
             </Label>
             <Select 
               value={preferences.activityLevel} 
               onValueChange={(v) => updatePreferences({ activityLevel: v as UserPreferences['activityLevel'] })}
             >
-              <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+              <SelectTrigger className="h-10 bg-card/50 border-border/50 rounded-xl text-base">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -201,16 +201,16 @@ export function ControlCenter({
         </div>
 
         {/* Diet */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Leaf className="w-3 h-3 text-primary" />
+        <div className="space-y-2 pt-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Leaf className="w-4 h-4 text-primary" />
             Diet Type
           </h3>
           <Select 
             value={preferences.diet} 
             onValueChange={(v) => updatePreferences({ diet: v })}
           >
-            <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+            <SelectTrigger className="h-10 bg-card/50 border-border/50 rounded-xl text-base">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -232,16 +232,16 @@ export function ControlCenter({
         </div>
 
         {/* Goal */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Flame className="w-3 h-3 text-primary" />
+        <div className="space-y-2 pt-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Flame className="w-4 h-4 text-primary" />
             Your Goal
           </h3>
           <Select 
             value={preferences.goal || 'normal'} 
             onValueChange={(v) => updatePreferences({ goal: v as UserPreferences['goal'] })}
           >
-            <SelectTrigger className="h-8 bg-card/50 border-border/50 rounded-xl text-sm">
+            <SelectTrigger className="h-10 bg-card/50 border-border/50 rounded-xl text-base">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -253,9 +253,9 @@ export function ControlCenter({
         </div>
 
         {/* Health Conditions */}
-        <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-            <Activity className="w-3 h-3 text-destructive" />
+        <div className="space-y-2 pt-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Activity className="w-4 h-4 text-destructive" />
             Health Conditions
           </h3>
           <div className="space-y-2">
@@ -271,8 +271,8 @@ export function ControlCenter({
               { key: "ibs", label: "IBS" },
               { key: "pregnancy", label: "Pregnancy" }
             ].map((cond) => (
-              <div key={cond.key} className="flex items-center justify-between p-2 rounded-xl bg-card/30 hover:bg-card/50 transition-colors">
-                <Label htmlFor={cond.key} className="text-xs cursor-pointer">
+              <div key={cond.key} className="flex items-center justify-between p-3 rounded-xl bg-card/30 hover:bg-card/50 transition-colors">
+                <Label htmlFor={cond.key} className="text-sm cursor-pointer">
                   {cond.label}
                 </Label>
                 <Switch

@@ -8,6 +8,7 @@ import { QuickOrder } from '@/components/mealcraft/quick-order'
 import { StrongAvocado, ChefHat } from '@/components/mealcraft/food-characters'
 import { AdminPanel } from '@/components/admin/AdminPanel'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { NutritionChart } from '@/components/mealcraft/meal-stage'
 
 export interface UserPreferences {
   age: number
@@ -103,7 +104,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
   const [mealPlan, setMealPlan] = useState<MealPlan>(sampleMealPlan)
   const [isGenerating, setIsGenerating] = useState(false)
   const [hasGenerated, setHasGenerated] = useState(false)
-  const [showMealPopup, setShowMealPopup] = useState(false)
+  const [selectedMealType, setSelectedMealType] = useState<'Breakfast' | 'Lunch' | 'Dinner' | null>(null)
   const [healthScore, setHealthScore] = useState(78)
   const [error, setError] = useState<string | null>(null)
   const [selectedMealForOrder, setSelectedMealForOrder] = useState<{meal: Meal, type: string} | null>(null)
@@ -112,7 +113,6 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true)
-    setShowMealPopup(true)
     setError(null)
 
     try {
@@ -162,7 +162,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
 
   const handleSelectMeal = (meal: Meal, type: string) => {
     setSelectedMealForOrder({ meal, type })
-    setShowMealPopup(false)
+    setSelectedMealType(null)
   }
 
   return (
@@ -248,10 +248,10 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
             <div className="relative z-10 h-full flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</h2>
+                  <h2 className="font-fredoka text-xl font-semibold text-foreground">{"Today's Menu"}</h2>
                   <p className="text-sm text-muted-foreground">Personalized for your goals</p>
                 </div>
-                <button onClick={onAdminClick} className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors border border-border/50 bg-background rounded-lg px-3 py-1.5 shadow-sm">
+                <button onClick={onAdminClick} className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors border border-border/50 bg-background rounded-lg px-3 py-1.5 shadow-sm">
                   Admin Panel
                 </button>
               </div>
@@ -262,33 +262,17 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
                   isGenerating={isGenerating}
                   recommendedCalories={recommendedCalories}
                   isShrunk={true}
-                  onSelectMeal={handleSelectMeal}
+                  onViewMeal={(meal, type) => setSelectedMealType(type as any)}
                 />
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center h-full p-4">
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="text-center p-8 bg-card/40 backdrop-blur-sm border border-border/20 rounded-[2rem] max-w-sm shadow-sm"
-                  >
-                    <div className="w-16 h-16 rounded-3xl bg-accent/10 flex items-center justify-center mx-auto mb-5">
-                      <Sparkles className="w-8 h-8 text-accent" />
-                    </div>
-                    <h3 className="font-fredoka text-xl font-semibold mb-3">
-                      {isGenerating ? "Crafting your menu..." : "Menu Generated!"}
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-6">
-                      {isGenerating ? "Please wait while we craft your perfect day of eating." : "Your personalized meal plan is ready."}
-                    </p>
-                    {!isGenerating && (
-                      <button
-                        onClick={() => setShowMealPopup(true)}
-                        className="px-6 py-2.5 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg hover:shadow-xl transition-shadow text-sm w-full"
-                      >
-                        View Full Meal Plan
-                      </button>
-                    )}
-                  </motion.div>
+                <div className="flex-1 overflow-hidden">
+                  <MealStage
+                    mealPlan={mealPlan}
+                    isGenerating={isGenerating}
+                    recommendedCalories={recommendedCalories}
+                    isShrunk={false}
+                    onViewMeal={(meal, type) => setSelectedMealType(type as any)}
+                  />
                 </div>
               )}
             </div>
@@ -315,35 +299,86 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
         </motion.div>
       </div>
 
-      {/* Meal Plan Popup */}
-      <Dialog open={showMealPopup} onOpenChange={setShowMealPopup}>
-        <DialogContent className="w-[95vw] !max-w-7xl h-[90vh] sm:h-[85vh] p-0 border-border/50 bg-card/95 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col shadow-2xl">
-          <DialogHeader className="p-6 pb-4 border-b border-border/30 bg-background/50 flex flex-row items-center justify-between">
-            <div>
-              <DialogTitle className="font-fredoka text-2xl font-semibold text-foreground">{"Today's Menu"}</DialogTitle>
-              <DialogDescription className="text-sm text-muted-foreground">Personalized for your goals</DialogDescription>
+      {/* Single Meal Popup */}
+      <Dialog open={!!selectedMealType} onOpenChange={(open) => !open && setSelectedMealType(null)}>
+        {selectedMealType && (
+          <DialogContent showCloseButton={false} className="w-[95vw] sm:max-w-6xl p-0 border-border/50 bg-card/95 backdrop-blur-xl rounded-[2rem] overflow-hidden flex flex-col shadow-2xl">
+            <DialogHeader className="p-8 pb-6 border-b border-border/30 bg-background/50 flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle className="font-fredoka text-2xl font-semibold text-foreground">{selectedMealType}</DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  {mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' 
+                    ? (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).calories 
+                    : 0} kcal
+                </DialogDescription>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setSelectedMealType(null)}
+                  className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-base font-medium hover:bg-secondary/80 transition-colors shadow-sm flex items-center gap-2"
+                >
+                  Back
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="px-4 py-2 bg-primary/10 text-primary rounded-xl text-base font-medium hover:bg-primary/20 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {isGenerating ? 'Regenerating...' : 'Regenerate'}
+                </motion.button>
+              </div>
+            </DialogHeader>
+            <div className="p-8 bg-background/20 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold mb-4 text-foreground">
+                    {mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' 
+                      ? (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).name 
+                      : ''}
+                  </h4>
+                  <div className="space-y-3">
+                    {mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' && 
+                    (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).items?.map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-start text-base border-b border-border/30 pb-3 last:border-0 last:pb-0">
+                        <div className="font-medium text-foreground">{item.name}</div>
+                        <div className="text-right text-muted-foreground whitespace-nowrap ml-3">
+                          {item.quantity} serving(s)<br />
+                          <span className="text-sm">{item.amount} g/ml</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col justify-center bg-card/30 p-4 rounded-2xl border border-border/20">
+                  <NutritionChart 
+                    protein={mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' ? (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).protein || 0 : 0} 
+                    carbs={mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' ? (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).carbs || 0 : 0} 
+                    fat={mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] && typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] === 'object' ? (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).fat || 0 : 0} 
+                  />
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-border/20">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    handleSelectMeal((mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal), selectedMealType)
+                  }}
+                  disabled={isGenerating || !mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] || typeof mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] !== 'object' || (mealPlan[selectedMealType.toLowerCase() as keyof MealPlan] as Meal).items?.length === 0}
+                  className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-base"
+                >
+                  <Utensils className="w-5 h-5" />
+                  Order this Meal
+                </motion.button>
+              </div>
             </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-secondary/80 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
-            >
-              <Sparkles className="w-4 h-4" />
-              {isGenerating ? 'Regenerating...' : 'Regenerate'}
-            </motion.button>
-          </DialogHeader>
-          <div className="flex-1 overflow-hidden p-6 bg-background/20">
-            <MealStage
-              mealPlan={mealPlan}
-              isGenerating={isGenerating}
-              recommendedCalories={recommendedCalories}
-              isShrunk={false}
-              onSelectMeal={handleSelectMeal}
-            />
-          </div>
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   )

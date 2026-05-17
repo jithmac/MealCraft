@@ -83,20 +83,13 @@ food_fat(Food, Fat) :-
 food_serving_size(Food, ServingSize) :-
     food(Food, _, _, ServingSize, _, _, _, _, _, _, _, _, _).
 
-item_grams(item(Food, Quantity), TotalGramsOrMl) :-
-    food_serving_size(Food, ServingSize),
-    TotalGramsOrMl is ServingSize * Quantity.
-
 food_meal(Food, MealType) :-
     food(Food, _, _, _, _, _, _, _, _, _, _, MealTags, _), member(MealType, MealTags).
 
 has_tag(Food, Tag) :-
     food(Food, _, _, _, _, _, _, _, _, _, _, _, DietaryTags), member(Tag, DietaryTags).
 
-has_all_tags(_, []).
-has_all_tags(Food, [Tag|Rest]) :-
-    has_tag(Food, Tag),
-    has_all_tags(Food, Rest).
+
 
 % ============================================================
 % DIETARY PREFERENCES
@@ -104,26 +97,45 @@ has_all_tags(Food, [Tag|Rest]) :-
 % Supported diets:
 %   omnivore, vegetarian, vegan, pescatarian, halal,
 %   gluten_free, low_carb, diabetic_friendly, high_protein
+%
+% NOTE: low_carb and high_protein are "preference" diets, not
+% exclusion diets. They are treated as omnivore here because:
+%   - low_carb: Java reduces base serving quantities instead
+%   - high_protein: Java increases protein serving quantities instead
+% Forcing hard tag filters on these diets would eliminate all
+% grains (low_carb) or all non-protein foods (high_protein).
+%
+% NOTE: diabetic_friendly accepts foods tagged either
+% diabetic_friendly_ok OR diabetic_portion_control, since
+% portion-controlled foods (rice, oats) are safe in limited servings.
 
 diet_required_tag(vegetarian, vegetarian_ok).
 diet_required_tag(vegan, vegan_ok).
 diet_required_tag(pescatarian, pescatarian_ok).
 diet_required_tag(halal, halal_ok).
 diet_required_tag(gluten_free, gluten_free_ok).
-diet_required_tag(low_carb, low_carb_ok).
-diet_required_tag(diabetic_friendly, diabetic_friendly_ok).
-diet_required_tag(high_protein, high_protein).
 
 diet_forbidden_tag(vegetarian, vegetarian_no).
 diet_forbidden_tag(vegan, vegan_no).
 diet_forbidden_tag(pescatarian, pescatarian_no).
 diet_forbidden_tag(gluten_free, contains_gluten).
 diet_forbidden_tag(gluten_free, gluten_free_only_if_certified).
-diet_forbidden_tag(low_carb, low_carb_no).
 
 suitable_for_diet(_, omnivore).
+suitable_for_diet(_, low_carb).
+suitable_for_diet(_, high_protein).
+
+% Diabetic-friendly: accept foods with EITHER diabetic_friendly_ok
+% OR diabetic_portion_control (safe in controlled servings)
+suitable_for_diet(Food, diabetic_friendly) :-
+    (has_tag(Food, diabetic_friendly_ok) ; has_tag(Food, diabetic_portion_control)),
+    \+ has_tag(Food, diabetic_caution).
+
 suitable_for_diet(Food, Diet) :-
     Diet \= omnivore,
+    Diet \= low_carb,
+    Diet \= high_protein,
+    Diet \= diabetic_friendly,
     diet_required_tag(Diet, RequiredTag),
     has_tag(Food, RequiredTag),
     \+ (diet_forbidden_tag(Diet, BadTag), has_tag(Food, BadTag)).
@@ -140,7 +152,9 @@ avoid_tag(overweight, high_calorie_dense).
 avoid_tag(overweight, high_sat_fat_caution).
 
 avoid_tag(diabetes, diabetic_caution).
-avoid_tag(diabetes, low_carb_no).
+% NOTE: low_carb_no is NOT avoided for diabetes — diabetics can eat
+% carbs in controlled portions. The diabetic_friendly diet handles
+% carb-appropriate food selection via diet_required_tag.
 
 avoid_tag(hypertension, high_sodium_caution).
 avoid_tag(hypertension, high_sat_fat_caution).
