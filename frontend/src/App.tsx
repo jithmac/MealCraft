@@ -19,6 +19,9 @@ export interface UserPreferences {
   diet: string
   healthConditions: string[]
   goal: 'normal' | 'diet' | 'bulk'
+  knowsCalories: boolean
+  exactCalories?: number
+  budget: number
 }
 
 export interface FoodItem {
@@ -57,6 +60,9 @@ const defaultPreferences: UserPreferences = {
   diet: 'omnivore',
   healthConditions: [],
   goal: 'normal',
+  knowsCalories: true,
+  exactCalories: 2000,
+  budget: 2000,
 }
 
 const sampleMealPlan: MealPlan = {
@@ -109,7 +115,7 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
   const [error, setError] = useState<string | null>(null)
   const [selectedMealForOrder, setSelectedMealForOrder] = useState<{meal: Meal, type: string} | null>(null)
 
-  const recommendedCalories = calculateTDEE(preferences)
+  const recommendedCalories = preferences.knowsCalories ? (preferences.exactCalories || 0) : calculateTDEE(preferences)
 
   const handleGenerate = async () => {
     setIsGenerating(true)
@@ -125,10 +131,11 @@ export function MainApp({ onAdminClick }: { onAdminClick: () => void }) {
           height: preferences.height,
           gender: preferences.gender,
           activityLevel: preferences.activityLevel,
-          budget: 0, // Ignored by backend
+          budget: preferences.budget || 2000,
           diet: preferences.diet,
           healthConditions: preferences.healthConditions,
           goal: preferences.goal,
+          exactCalories: preferences.knowsCalories ? preferences.exactCalories : null
         }),
       })
 

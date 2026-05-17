@@ -417,32 +417,3 @@ suggest(TargetCalories, Diet, Conditions) :-
     write('Fat: '), write(Fat), write(' g'), nl,
     write('Matched total calories: '), write(TotalCalories), write(' kcal'), nl.
 
-% ============================================================
-% HARRIS-BENEDICT CALORIE ESTIMATION
-% ============================================================
-% Gender: male or female
-% Activity level:
-%   sedentary, light, moderate, active, very_active
-
-activity_factor(sedentary, 1.2).
-activity_factor(light, 1.375).
-activity_factor(moderate, 1.55).
-activity_factor(active, 1.725).
-activity_factor(very_active, 1.9).
-
-bmr(male, WeightKg, HeightCm, AgeYears, BMR) :-
-    BMR is 88.362 + (13.397 * WeightKg) + (4.799 * HeightCm) - (5.677 * AgeYears).
-
-bmr(female, WeightKg, HeightCm, AgeYears, BMR) :-
-    BMR is 447.593 + (9.247 * WeightKg) + (3.098 * HeightCm) - (4.330 * AgeYears).
-
-daily_calorie_need(Gender, WeightKg, HeightCm, AgeYears, ActivityLevel, Calories) :-
-    bmr(Gender, WeightKg, HeightCm, AgeYears, BMR),
-    activity_factor(ActivityLevel, Factor),
-    CaloriesFloat is BMR * Factor,
-    Calories is round(CaloriesFloat).
-
-% Example:
-% ?- daily_calorie_need(male, 75, 175, 22, very_active, Calories).
-% ?- daily_calorie_need(male, 75, 175, 22, very_active, Calories),
-%    suggest(Calories, omnivore, []).

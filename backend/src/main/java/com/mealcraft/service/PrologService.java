@@ -32,7 +32,22 @@ public class PrologService {
     }
 
     public synchronized MealPlanResponseDto generateMealPlan(UserPreferencesDto prefs) {
-        int tdee = calculateTDEE(prefs);
+        int tdee;
+        String goal;
+        
+        if (prefs.getExactCalories() != null && prefs.getExactCalories() > 0) {
+            tdee = prefs.getExactCalories();
+            goal = "normal";
+        } else {
+            tdee = calculateTDEE(prefs);
+            goal = prefs.getGoal() != null && !prefs.getGoal().isEmpty() ? prefs.getGoal().toLowerCase() : "normal";
+            if ("diet".equals(goal)) {
+                tdee -= 300;
+            } else if ("bulk".equals(goal)) {
+                tdee += 300;
+            }
+        }
+        
         if (tdee < 1500) {
             throw new UnsafeCalorieException("Calculated calories are below 1500 kcal (" + tdee + " kcal). Please consult a doctor.");
         }
@@ -44,13 +59,6 @@ public class PrologService {
         
         List<String> conditions = prefs.getHealthConditions() != null ? prefs.getHealthConditions() : new ArrayList<>();
         String conditionsStr = "[" + String.join(",", conditions) + "]";
-
-        String goal = prefs.getGoal() != null && !prefs.getGoal().isEmpty() ? prefs.getGoal().toLowerCase() : "normal";
-        if ("diet".equals(goal)) {
-            tdee -= 300;
-        } else if ("bulk".equals(goal)) {
-            tdee += 300;
-        }
 
         // Cap TDEE for practical meal generation — the food database
         // can't realistically produce plans above ~4000 kcal
@@ -64,7 +72,9 @@ public class PrologService {
             // Build dynamic theory from database
             List<FoodEntity> foods = foodRepository.findAll();
             StringBuilder dynamicTheory = new StringBuilder();
+            Map<String, Double> costMap = new HashMap<>();
             for (FoodEntity food : foods) {
+                costMap.put(food.getFoodName(), food.getCostLkr() != null ? food.getCostLkr() : 0.0);
                 dynamicTheory.append(String.format("food(%s, %s, %s, %d, %s, %s, %s, %s, [%s], [%s], '%s', [%s], [%s]).\n",
                         food.getFoodName(),
                         food.getOrigin() != null && !food.getOrigin().isEmpty() ? food.getOrigin() : "international",
@@ -154,6 +164,12 @@ public class PrologService {
             Random rng = new Random();
             int tolerance = tdee >= 3500 ? 700 : 500;
 
+            String bestPlanStr = null;
+            String bestBreakfast = null, bestLunch = null, bestDinner = null;
+            int bestTotalCals = 0;
+            double minCostDiff = Double.MAX_VALUE;
+
+
 
             for (int attempt = 0; attempt < 500; attempt++) {
                 // Vary quantities per attempt to explore calorie space
@@ -241,29 +257,67 @@ public class PrologService {
 
                 int totalCals = (int) Math.round(Double.parseDouble(calResult.getVarValue("Total").toString()));
 
-
+                // ---- Validate budget ----
+                double attemptCost = 0;
+                attemptCost += costMap.getOrDefault(bBase, 0.0) * curBaseQty;
+                attemptCost += costMap.getOrDefault(bProtein, 0.0) * curProteinQty;
+                attemptCost += costMap.getOrDefault(bLight, 0.0) * curLightQty;
+                
+                attemptCost += costMap.getOrDefault(lBase, 0.0) * curBaseQty;
+                attemptCost += costMap.getOrDefault(lProtein, 0.0) * curProteinQty;
+                attemptCost += costMap.getOrDefault(lSide1, 0.0) * curSideQty;
+                attemptCost += costMap.getOrDefault(lSide2, 0.0) * curSideQty;
+                
+                attemptCost += costMap.getOrDefault(dBase, 0.0) * curBaseQty;
+                attemptCost += costMap.getOrDefault(dProtein, 0.0) * curProteinQty;
+                attemptCost += costMap.getOrDefault(dSide, 0.0) * curSideQty;
+                attemptCost += costMap.getOrDefault(dLight, 0.0) * 1;
+                
+                int userBudget = prefs.getBudget() > 0 ? prefs.getBudget() : 2000;
 
                 if (Math.abs(totalCals - tdee) <= tolerance) {
-                    // ========= VALID PLAN FOUND =========
-
-                    MealPlanResponseDto response = new MealPlanResponseDto();
-                    response.setTotalCals(totalCals);
-
-                    // Get macro totals from Prolog
-                    SolveInfo macroRes = engine.solve(String.format("plan_macro_total(%s, Carbs, Protein, Fat).", planStr));
-                    if (macroRes.isSuccess()) {
-                        response.setTotalCarbs((int) Math.round(Double.parseDouble(macroRes.getVarValue("Carbs").toString())));
-                        response.setTotalProtein((int) Math.round(Double.parseDouble(macroRes.getVarValue("Protein").toString())));
-                        response.setTotalFat((int) Math.round(Double.parseDouble(macroRes.getVarValue("Fat").toString())));
+                    // Check budget: ideally cost should be <= userBudget + 20%
+                    double costDiff;
+                    if (attemptCost <= userBudget * 1.2) {
+                        costDiff = 0; 
+                    } else {
+                        costDiff = attemptCost - (userBudget * 1.2);
                     }
-
-                    // Parse individual meals
-                    response.setBreakfast(parseMeal(engine, "Breakfast", breakfastItems));
-                    response.setLunch(parseMeal(engine, "Lunch", lunchItems));
-                    response.setDinner(parseMeal(engine, "Dinner", dinnerItems));
-
-                    return response;
+                    
+                    if (costDiff < minCostDiff) {
+                        minCostDiff = costDiff;
+                        bestPlanStr = planStr;
+                        bestBreakfast = breakfastItems;
+                        bestLunch = lunchItems;
+                        bestDinner = dinnerItems;
+                        bestTotalCals = totalCals;
+                        
+                        if (costDiff == 0) {
+                            break; // Perfect plan found!
+                        }
+                    }
                 }
+            }
+
+            if (bestPlanStr != null) {
+                // ========= BEST PLAN FOUND =========
+                MealPlanResponseDto response = new MealPlanResponseDto();
+                response.setTotalCals(bestTotalCals);
+
+                // Get macro totals from Prolog
+                SolveInfo macroRes = engine.solve(String.format("plan_macro_total(%s, Carbs, Protein, Fat).", bestPlanStr));
+                if (macroRes.isSuccess()) {
+                    response.setTotalCarbs((int) Math.round(Double.parseDouble(macroRes.getVarValue("Carbs").toString())));
+                    response.setTotalProtein((int) Math.round(Double.parseDouble(macroRes.getVarValue("Protein").toString())));
+                    response.setTotalFat((int) Math.round(Double.parseDouble(macroRes.getVarValue("Fat").toString())));
+                }
+
+                // Parse individual meals
+                response.setBreakfast(parseMeal(engine, "Breakfast", bestBreakfast));
+                response.setLunch(parseMeal(engine, "Lunch", bestLunch));
+                response.setDinner(parseMeal(engine, "Dinner", bestDinner));
+
+                return response;
             }
         } catch (Exception e) {
             e.printStackTrace();

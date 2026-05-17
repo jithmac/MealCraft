@@ -23,6 +23,9 @@ interface UserPreferences {
   diet: string
   healthConditions: string[]
   goal: 'normal' | 'diet' | 'bulk'
+  knowsCalories: boolean
+  exactCalories?: number
+  budget: number
 }
 
 interface ControlCenterProps {
@@ -107,8 +110,38 @@ export function ControlCenter({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto pr-2 custom-scrollbar">
-        {/* Personal Info Section */}
-        <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
+          <Label htmlFor="knowsCalories" className="text-sm font-semibold cursor-pointer text-primary">
+            I know my exact calorie target
+          </Label>
+          <Switch
+            id="knowsCalories"
+            checked={preferences.knowsCalories}
+            onCheckedChange={(c) => updatePreferences({ knowsCalories: c })}
+          />
+        </div>
+
+        {preferences.knowsCalories ? (
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+              <Flame className="w-4 h-4 text-primary" />
+              Target Calories
+            </h3>
+            <div className="space-y-1">
+              <Label htmlFor="exactCalories" className="text-sm flex items-center gap-1">
+                Daily Goal <span className="text-muted-foreground">(kcal)</span>
+              </Label>
+              <Input
+                id="exactCalories"
+                type="number"
+                value={preferences.exactCalories || 0}
+                onChange={(e) => updatePreferences({ exactCalories: parseInt(e.target.value) || 0 })}
+                className="h-10 bg-card/50 border-border/50 rounded-xl text-base font-bold text-primary"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <User className="w-4 h-4" />
             Personal Info
@@ -199,6 +232,7 @@ export function ControlCenter({
             <p className="text-xl font-bold text-primary font-fredoka">{recommendedCalories} kcal</p>
           </motion.div>
         </div>
+        )}
 
         {/* Diet */}
         <div className="space-y-2 pt-2">
@@ -231,7 +265,27 @@ export function ControlCenter({
           </Select>
         </div>
 
+        {/* Budget */}
+        <div className="space-y-2 pt-2">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Banknote className="w-4 h-4 text-primary" />
+            Daily Budget (LKR)
+          </h3>
+          <div className="flex items-center gap-4 bg-card/30 p-3 rounded-xl border border-border/20">
+            <Slider
+              value={[preferences.budget || 2000]}
+              min={500}
+              max={15000}
+              step={500}
+              onValueChange={([v]) => updatePreferences({ budget: v })}
+              className="flex-1 cursor-pointer"
+            />
+            <span className="font-bold text-primary w-16 text-right font-fredoka">{preferences.budget || 2000}</span>
+          </div>
+        </div>
+
         {/* Goal */}
+        {!preferences.knowsCalories && (
         <div className="space-y-2 pt-2">
           <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
             <Flame className="w-4 h-4 text-primary" />
@@ -251,6 +305,7 @@ export function ControlCenter({
             </SelectContent>
           </Select>
         </div>
+        )}
 
         {/* Health Conditions */}
         <div className="space-y-2 pt-2">

@@ -12,6 +12,7 @@ public class UserPreferencesDto {
     private String diet;
     private List<String> healthConditions;
     private String goal;
+    private Integer exactCalories;
 
     // Getters and Setters
     public int getAge() { return age; }
@@ -40,4 +41,7 @@ public class UserPreferencesDto {
 
     public String getGoal() { return goal; }
     public void setGoal(String goal) { this.goal = goal; }
+
+    public Integer getExactCalories() { return exactCalories; }
+    public void setExactCalories(Integer exactCalories) { this.exactCalories = exactCalories; }
 }
